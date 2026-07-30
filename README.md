@@ -23,7 +23,7 @@
   - Custom presets (*Gradient Indigo*, *Dark Slate*, *Cyberpunk*, *Emerald Green*, *Crimson Danger*)
   - Custom background image uploads
   - Custom titles, subtitles, participant lists, and security badges
-- 🎯 **YouTube Engine Hack**: Convert raw audio (MP3, M4A, WAV, OGG, FLAC) into MP4, upload to YouTube as *Unlisted*, and let YouTube's industry-leading Speech-to-Text engine auto-generate high-accuracy transcripts (especially for **Hindi & Hinglish** meetings!).
+- 🎯 **YouTube Engine Hack**: Convert raw audio (**AAC / .m4a, MP3, AMR, WAV**, OGG, FLAC) into MP4, upload to YouTube as *Unlisted*, and let YouTube's industry-leading Speech-to-Text engine auto-generate high-accuracy transcripts (especially for **Hindi & Hinglish** meetings!).
 - 🤖 **Instant AI Notes**: Copy YouTube auto-captions into **Gemini / ChatGPT / Claude** to generate structured meeting summaries, key decisions, and action items effortlessly.
 
 ---
@@ -40,7 +40,7 @@ flowchart LR
 ```
 
 ### 1. Ingest Media
-Drag & drop any audio (`.mp3`, `.m4a`, `.wav`, `.aac`, `.flac`) or video file (`.mp4`, `.webm`, `.mkv`).
+Drag & drop any supported audio recording (**`AAC / .m4a`**, **`MP3`**, **`AMR`**, **`WAV`**, `.flac`, `.ogg`) or video file (`.mp4`, `.webm`, `.mkv`).
 
 ### 2. Design Visual Banner
 Add meeting metadata, participant tags, confidential badges, and custom branding colors.

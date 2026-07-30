@@ -57,12 +57,12 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
     setLoadingMedia(true);
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const isVideo = ["mp4", "mkv", "mov", "webm", "avi"].includes(ext);
-    const isAudio = ["mp3", "wav", "aac", "m4a", "flac", "ogg"].includes(ext);
+    const isVideo = ["mp4", "mkv", "mov", "webm", "avi", "3gp"].includes(ext);
+    const isAudio = ["mp3", "wav", "aac", "m4a", "amr", "flac", "ogg", "wma", "opus"].includes(ext);
 
     if (!isVideo && !isAudio) {
       setErrorMsg(
-        "Unsupported format. Please select an MP4, MKV, MOV, WebM, MP3, WAV, AAC, or M4A file."
+        "Unsupported format. Please select AAC (.m4a), MP3, AMR, WAV, FLAC, OGG, or video files."
       );
       setLoadingMedia(false);
       return;
@@ -142,7 +142,7 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
           Step 1: Select Audio or Video Recording
         </h2>
         <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-          Upload your meeting recording (MP4/MKV video or MP3/WAV audio). Video feeds containing sensitive screen shares will be safely stripped locally.
+          Upload your meeting recording in <span className="text-indigo-300 font-medium">AAC (.m4a), MP3, AMR, WAV</span>, FLAC, OGG, or video formats (MP4/MKV). Video feeds with sensitive screen shares are safely stripped locally.
         </p>
       </div>
 
@@ -166,7 +166,7 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
         <input
           ref={fileInputRef}
           type="file"
-          accept="video/mp4,video/x-matroska,video/webm,video/quicktime,audio/mpeg,audio/wav,audio/aac,audio/x-m4a,audio/*,video/*"
+          accept="audio/aac,audio/x-m4a,audio/m4a,audio/mpeg,audio/mp3,audio/amr,audio/3gpp,audio/wav,audio/x-wav,audio/flac,audio/ogg,video/mp4,video/x-matroska,video/webm,video/quicktime,audio/*,video/*"
           className="hidden"
           onChange={handleInputChange}
         />
@@ -196,7 +196,7 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
                 Drag & drop your meeting recording file here
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                Supports <span className="text-indigo-300 font-medium">MP4, MKV, MOV, WebM, MP3, WAV, AAC, M4A</span> (Unlimited file size)
+                Supports <span className="text-indigo-300 font-medium">AAC (.m4a), MP3, AMR, WAV, FLAC, OGG, MP4, MKV</span> (Unlimited file size)
               </p>
             </div>
           ) : (

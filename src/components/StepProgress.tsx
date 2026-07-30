@@ -18,7 +18,7 @@ export const StepProgress: React.FC<StepProgressProps> = ({
     {
       id: 1,
       title: "1. Upload Media",
-      subtitle: "MP4/MP3 Ingestion",
+      subtitle: "AAC/MP3/AMR/WAV Ingestion",
       icon: Upload,
     },
     {
