@@ -260,7 +260,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.textAlign = "right";
     ctx.fillText(
-      `VIDMEET MATRIX • ${settings.resolutionPreset.toUpperCase()} 1FPS ULTRA-FAST MODE`,
+      `VIDFLASH MATRIX • ${settings.resolutionPreset.toUpperCase()} 1FPS ULTRA-FAST MODE`,
       cardX + cardWidth - 35,
       cardY + cardHeight - 25
     );

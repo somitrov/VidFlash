@@ -128,7 +128,7 @@ export default function Home() {
           <div className="flex items-center space-x-2">
             <Video className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-400">
-              VidScribe Matrix
+              VidFlash Matrix
             </span>
             <span>— 100% In-Browser Media Converter</span>
           </div>

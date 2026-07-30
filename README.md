@@ -1,6 +1,6 @@
-# ⚡ VidScribe Matrix (`v1.0 WASM`)
+# ⚡ VidFlash Matrix (`v1.0 WASM`)
 
-> **Flash Transcription Powered by YouTube!**  
+> **Ready Flash Transcription for YouTube!**  
 > Convert long audio & video meeting recordings into ultra-lightweight, YouTube-accepted MP4 files right inside your browser with **zero server uploads**. Unlock **100% free auto-transcription** and instant **AI meeting notes via Gemini & ChatGPT**.
 
 ---
@@ -10,7 +10,7 @@
 [![FFmpeg WASM](https://img.shields.io/badge/FFmpeg-WebAssembly-0078D4?style=for-the-badge&logo=ffmpeg)](https://ffmpeg.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20In--Browser-emerald?style=for-the-badge&logo=shield)](https://github.com/somitrov/VidScribe)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25%20In--Browser-emerald?style=for-the-badge&logo=shield)](https://github.com/somitrov/VidFlash)
 
 ---
 
@@ -61,10 +61,10 @@ Make sure you have **Node.js 18+** installed on your system.
 
 ```bash
 # Clone the repository
-git clone https://github.com/somitrov/VidScribe.git
+git clone https://github.com/somitrov/VidFlash.git
 
 # Navigate into the directory
-cd VidScribe
+cd VidFlash
 
 # Install dependencies
 npm install
@@ -93,7 +93,7 @@ Open https://vidscribe.hirelancer.in/ in your browser to start converting!
 
 > **The Problem:** Standard Speech-to-Text APIs (like OpenAI Whisper API or Google Speech) can be expensive, complex to set up, or struggle with code-switched languages like **Hindi + English (Hinglish)**.
 > 
-> **The Solution:** YouTube has built the world's most advanced multilingual Speech-to-Text engine for free auto-captions. By turning audio files into lightweight 144p videos with **VidScribe Matrix**, you can leverage YouTube's free captioning pipeline securely and effortlessly!
+> **The Solution:** YouTube has built the world's most advanced multilingual Speech-to-Text engine for free auto-captions. By turning audio files into lightweight 144p videos with **VidFlash Matrix**, you can leverage YouTube's free captioning pipeline securely and effortlessly!
 
 ---
 
@@ -107,7 +107,7 @@ Open https://vidscribe.hirelancer.in/ in your browser to start converting!
 ## 🤝 Contributing
 
 Contributions, issues, and feature requests are welcome!  
-Feel free to check the [issues page](https://github.com/somitrov/VidScribe/issues).
+Feel free to check the [issues page](https://github.com/somitrov/VidFlash/issues).
 
 ---
 

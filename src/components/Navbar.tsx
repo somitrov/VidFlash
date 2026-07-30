@@ -23,14 +23,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide }) => {
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                VidScribe <span className="text-indigo-400">Matrix</span>
+                VidFlash <span className="text-indigo-400">Matrix</span>
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                 v1.0 WASM
               </span>
             </div>
             <p className="text-xs text-slate-400 hidden sm:block">
-              Flash Transcription Powered by YouTube!
+              Ready Flash Transcription for YouTube!
             </p>
           </div>
         </div>
