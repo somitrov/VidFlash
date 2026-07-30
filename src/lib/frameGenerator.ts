@@ -316,24 +316,21 @@ export async function generate1FPSAnimationSequence(
     }
 
     // 7. Rotating Vinyl Record Turntable (1 FPS Animation) & Subscribe CTA Badge
-    let vinylX = cardX + 155;
-    let vinylY = cardY + cardHeight - 125; // Restored back to original higher position!
+    let vinylX = cardX + 175;
+    let vinylY = cardY + cardHeight - 155; // Lifted higher so 112px record does not touch bottom/left corners!
     let ctaX = cardX + cardWidth - 160;
-    let ctaY = cardY + cardHeight - 95; // Down at bottom side!
+    let ctaY = cardY + cardHeight - 65;
 
     if (settings.textAlign === "center") {
-      vinylX = width / 2;
-      vinylY = startY + lines.length * lineHeight + (settings.meetingSubtitle ? 35 : 0) + (settings.participants ? 30 : 0) + 115;
-      if (vinylY > cardY + cardHeight - 130) {
-        vinylY = cardY + cardHeight - 130;
-      }
+      vinylX = width / 2; // Center horizontally
+      vinylY = cardY + cardHeight / 2 + 15; // Center vertically between text and CTA button!
       ctaX = width / 2;
-      ctaY = cardY + cardHeight - 35;
+      ctaY = cardY + cardHeight - 55;
     } else if (settings.textAlign === "right") {
-      vinylX = cardX + cardWidth - 155;
-      vinylY = cardY + cardHeight - 125;
+      vinylX = cardX + cardWidth - 175;
+      vinylY = cardY + cardHeight - 155;
       ctaX = cardX + 160;
-      ctaY = cardY + cardHeight - 95;
+      ctaY = cardY + cardHeight - 65;
     }
 
     const vinylRadius = 112; // Even larger & extra crisp!
