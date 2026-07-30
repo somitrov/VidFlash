@@ -10,7 +10,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Volume2,
-  Cpu,
+  Image as ImageIcon,
+  Activity,
+  AlertTriangle,
 } from "lucide-react";
 import { CanvasSettings, CanvasPreset, ResolutionPreset } from "@/types";
 
@@ -22,6 +24,39 @@ interface CanvasStudioProps {
   onPrevStep: () => void;
 }
 
+const NATURE_PRESETS: { id: CanvasPreset; name: string; icon: string; url: string }[] = [
+  {
+    id: "nature-forest",
+    name: "🌲 Misty Forest",
+    icon: "🌲",
+    url: "https://images.unsplash.com/photo-1511497584788-876761c119ef?auto=format&fit=crop&w=1920&q=80",
+  },
+  {
+    id: "nature-aurora",
+    name: "🌌 Northern Lights",
+    icon: "🌌",
+    url: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1920&q=80",
+  },
+  {
+    id: "nature-ocean",
+    name: "🌊 Deep Ocean",
+    icon: "🌊",
+    url: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1920&q=80",
+  },
+  {
+    id: "nature-sunset",
+    name: "🌄 Alpine Sunset",
+    icon: "🌄",
+    url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920&q=80",
+  },
+  {
+    id: "nature-cosmic",
+    name: "✨ Cosmic Nebula",
+    icon: "✨",
+    url: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1920&q=80",
+  },
+];
+
 export const CanvasStudio: React.FC<CanvasStudioProps> = ({
   settings,
   onChangeSettings,
@@ -32,13 +67,23 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [bgImageElement, setBgImageElement] = useState<HTMLImageElement | null>(null);
 
-  // Load custom image when customBgImage changes
+  // Load image when custom image or nature preset changes
   useEffect(() => {
+    let srcUrl: string | null = null;
+
     if (settings.preset === "custom-image" && settings.customBgImage) {
+      srcUrl = settings.customBgImage;
+    } else if (settings.preset.startsWith("nature-")) {
+      const match = NATURE_PRESETS.find((n) => n.id === settings.preset);
+      if (match) srcUrl = match.url;
+    }
+
+    if (srcUrl) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => setBgImageElement(img);
-      img.src = settings.customBgImage;
+      img.onerror = () => setBgImageElement(null);
+      img.src = srcUrl;
     } else {
       setBgImageElement(null);
     }
@@ -59,7 +104,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     canvas.height = height;
 
     // 1. Draw Background
-    if (settings.preset === "custom-image" && bgImageElement) {
+    if (bgImageElement) {
       ctx.drawImage(bgImageElement, 0, 0, width, height);
       ctx.fillStyle = `rgba(15, 23, 42, ${settings.overlayOpacity})`;
       ctx.fillRect(0, 0, width, height);
@@ -129,7 +174,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ctx.save();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.fillStyle = "rgba(15, 23, 42, 0.5)";
+    ctx.fillStyle = "rgba(15, 23, 42, 0.55)";
     ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 20);
     ctx.fill();
     ctx.stroke();
@@ -240,27 +285,117 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
       ctx.restore();
     }
 
-    // 7. Audio Waveform Bar
-    const waveY = cardY + cardHeight - 65;
-    const waveWidth = cardWidth - 70;
-    const waveX = cardX + 35;
-    const barsCount = 50;
-    const barSpacing = waveWidth / barsCount;
+    // 7. NCS-Style Particle Circular & Equalizer Spectrum Visualizer
+    const spectrumStyle = settings.spectrumStyle || "ncs-circular";
+    const primaryColor = settings.spectrumColor || "#818cf8";
 
-    ctx.save();
-    ctx.fillStyle = "rgba(99, 102, 241, 0.45)";
-    for (let i = 0; i < barsCount; i++) {
-      const barH = 12 + Math.abs(Math.sin(i * 0.3) * 28) + (i % 3 === 0 ? 12 : 0);
-      const bx = waveX + i * barSpacing;
-      ctx.fillRect(bx, waveY - barH / 2, barSpacing * 0.6, barH);
+    if (spectrumStyle === "ncs-circular") {
+      const spectrumX =
+        settings.textAlign === "right"
+          ? cardX + 160
+          : settings.textAlign === "center"
+          ? width / 2
+          : cardX + cardWidth - 170;
+      const spectrumY = cardY + cardHeight - 120;
+      const baseRadius = 52;
+      const barsCount = 48;
+
+      ctx.save();
+      // Outer Glowing Ring
+      ctx.shadowColor = primaryColor;
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = primaryColor;
+      ctx.beginPath();
+      ctx.arc(spectrumX, spectrumY, baseRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Core Background Circle
+      ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+      ctx.beginPath();
+      ctx.arc(spectrumX, spectrumY, baseRadius - 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Center Icon Emblem
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = primaryColor;
+      ctx.font = "bold 22px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("⚡", spectrumX, spectrumY);
+
+      // Radial Frequency Bars (NCS Style)
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = "round";
+      for (let i = 0; i < barsCount; i++) {
+        const angle = (i / barsCount) * Math.PI * 2;
+        const pseudoAmp =
+          Math.abs(Math.sin(i * 0.45) * 26) + Math.abs(Math.cos(i * 0.75) * 14) + 8;
+        const x1 = spectrumX + Math.cos(angle) * baseRadius;
+        const y1 = spectrumY + Math.sin(angle) * baseRadius;
+        const x2 = spectrumX + Math.cos(angle) * (baseRadius + pseudoAmp);
+        const y2 = spectrumY + Math.sin(angle) * (baseRadius + pseudoAmp);
+
+        ctx.strokeStyle = i % 2 === 0 ? primaryColor : "#c084fc";
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      // Ambient Floating Star Particles (NCS Style)
+      const particleSeeds = [
+        { angle: 0.2, dist: 85, r: 3 },
+        { angle: 0.8, dist: 110, r: 2 },
+        { angle: 1.5, dist: 95, r: 4 },
+        { angle: 2.1, dist: 120, r: 2.5 },
+        { angle: 2.9, dist: 88, r: 3.5 },
+        { angle: 3.6, dist: 105, r: 2 },
+        { angle: 4.3, dist: 130, r: 4 },
+        { angle: 5.1, dist: 92, r: 3 },
+        { angle: 5.8, dist: 115, r: 2.5 },
+      ];
+      ctx.shadowBlur = 12;
+      particleSeeds.forEach((p) => {
+        const px = spectrumX + Math.cos(p.angle) * p.dist;
+        const py = spectrumY + Math.sin(p.angle) * p.dist;
+        ctx.fillStyle = primaryColor;
+        ctx.beginPath();
+        ctx.arc(px, py, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.restore();
+    } else if (spectrumStyle === "frequency-bars") {
+      const waveY = cardY + cardHeight - 65;
+      const waveWidth = cardWidth - 70;
+      const waveX = cardX + 35;
+      const barsCount = 55;
+      const barSpacing = waveWidth / barsCount;
+
+      ctx.save();
+      ctx.shadowColor = primaryColor;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = primaryColor;
+
+      for (let i = 0; i < barsCount; i++) {
+        const barH = 10 + Math.abs(Math.sin(i * 0.35) * 32) + (i % 4 === 0 ? 14 : 0);
+        const bx = waveX + i * barSpacing;
+        ctx.fillRect(bx, waveY - barH / 2, barSpacing * 0.65, barH);
+      }
+      ctx.restore();
     }
 
+    // 8. Footer Brand Tag
+    ctx.save();
     const footerFontSize = 13;
     ctx.font = `600 ${footerFontSize}px system-ui, -apple-system, sans-serif`;
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.textAlign = "right";
     ctx.fillText(
-      `VIDMEET MATRIX • ${settings.resolutionPreset.toUpperCase()} 1FPS ULTRA-FAST MODE`,
+      `VIDSCRIBE MATRIX • ${settings.resolutionPreset.toUpperCase()} ${
+        settings.animatedVideoSpectrum ? "ANIMATED SPECTRUM" : "1FPS TURBO MODE"
+      }`,
       cardX + cardWidth - 35,
       cardY + cardHeight - 25
     );
@@ -327,7 +462,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         onChangeSettings({
           ...settings,
           template: "podcast",
-          preset: "gradient-emerald",
+          preset: "nature-aurora",
           showBadge: true,
           badgeText: "AUDIO TRANSCRIPTION MODE",
           badgeColor: "#10b981",
@@ -392,120 +527,120 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
           Step 2: Customize Visual Banner Overlay
         </h2>
         <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-          Design the static thumbnail frame. Select <span className="text-emerald-400 font-semibold">144p Turbo Mode</span> for maximum rendering speed on 45m+ meeting files!
+          Design your visual banner with <span className="text-indigo-300 font-semibold">NCS Particle Spectrum</span> & <span className="text-emerald-400 font-semibold">Royalty-Free Nature Wallpapers</span>.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Studio Controls (5 cols) */}
         <div className="lg:col-span-5 space-y-6 bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-          {/* Resolution Selector Section */}
+          
+          {/* Audio Spectrum & Animated Video Mode Toggle */}
           <div className="space-y-3 pb-3 border-b border-slate-800">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
               <span className="flex items-center space-x-1.5">
-                <Zap className="w-4 h-4 text-emerald-400 animate-pulse" />
-                <span>Export Resolution & Speed</span>
-              </span>
-              <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                YouTube Accepted
+                <Activity className="w-4 h-4 text-purple-400" />
+                <span>Audio Spectrum Style</span>
               </span>
             </label>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {resolutions.map((r) => (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "ncs-circular", label: "⭕ NCS Circular" },
+                { id: "frequency-bars", label: "📊 Equalizer Bars" },
+                { id: "none", label: "🚫 None" },
+              ].map((style) => (
                 <button
-                  key={r.id}
+                  key={style.id}
                   onClick={() =>
                     onChangeSettings({
                       ...settings,
-                      resolutionPreset: r.id,
-                      resolution: { width: r.width, height: r.height },
+                      spectrumStyle: style.id as any,
                     })
                   }
-                  className={`relative p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${
-                    settings.resolutionPreset === r.id
-                      ? "border-emerald-500 bg-emerald-950/40 text-white ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-500/10"
+                  className={`p-2 rounded-xl border text-xs font-semibold text-center transition-all ${
+                    settings.spectrumStyle === style.id
+                      ? "border-purple-500 bg-purple-950/60 text-white ring-1 ring-purple-500/50"
                       : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
                   }`}
                 >
-                  {r.recommended && (
-                    <span className="absolute -top-2 -right-1 px-1.5 py-0.5 rounded-full bg-emerald-500 text-[9px] font-extrabold text-slate-950 uppercase shadow-md">
-                      Fastest
-                    </span>
-                  )}
-                  <span className="text-xs font-bold">{r.label}</span>
-                  <span className="text-[10px] text-slate-400 mt-1">
-                    {r.width}x{r.height}
-                  </span>
+                  {style.label}
                 </button>
               ))}
             </div>
 
-            {/* Audio Stream Copy Optimization Toggle */}
-            <div className="pt-2 flex items-center justify-between p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30">
-              <div className="space-y-0.5">
-                <div className="text-xs font-bold text-indigo-300 flex items-center space-x-1.5">
-                  <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Direct Audio Stream Copy (-c:a copy)</span>
+            {/* Speed Toggle Switch */}
+            <div className="pt-2">
+              <div
+                className={`p-3 rounded-xl border transition-all ${
+                  settings.animatedVideoSpectrum
+                    ? "bg-amber-950/30 border-amber-500/40"
+                    : "bg-emerald-950/30 border-emerald-500/40"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-slate-200 flex items-center space-x-1.5">
+                      <Zap className={`w-3.5 h-3.5 ${settings.animatedVideoSpectrum ? "text-amber-400" : "text-emerald-400"}`} />
+                      <span>{settings.animatedVideoSpectrum ? "Animated Spectrum Video" : "⚡ 144p Turbo Mode (3s Export)"}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      {settings.animatedVideoSpectrum
+                        ? "Renders dynamic particle video frames (Export time will be slightly longer)."
+                        : "Encodes static banner with spectrum card in 3 seconds!"}
+                    </p>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    checked={settings.animatedVideoSpectrum}
+                    onChange={(e) =>
+                      onChangeSettings({
+                        ...settings,
+                        animatedVideoSpectrum: e.target.checked,
+                      })
+                    }
+                    className="w-4 h-4 accent-amber-500 rounded cursor-pointer shrink-0 ml-2"
+                  />
                 </div>
-                <p className="text-[10px] text-slate-400">
-                  Preserves 100% original audio quality with 0% CPU audio re-encoding cost.
-                </p>
               </div>
-
-              <input
-                type="checkbox"
-                checked={settings.audioCopyMode}
-                onChange={(e) =>
-                  onChangeSettings({
-                    ...settings,
-                    audioCopyMode: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0 ml-2"
-              />
             </div>
           </div>
 
-          {/* Quick Presets */}
-          <div>
-            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2 mb-3">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Visual Templates</span>
+          {/* Royalty-Free Nature Wallpapers */}
+          <div className="space-y-3 pb-3 border-b border-slate-800">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
+              <ImageIcon className="w-4 h-4 text-emerald-400" />
+              <span>Royalty-Free Nature Wallpapers</span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => applyTemplate("google-meet")}
-                className="p-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-200 flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <span>Google Meet</span>
-              </button>
-              <button
-                onClick={() => applyTemplate("confidential")}
-                className="p-2.5 rounded-xl border border-red-500/30 bg-red-950/20 hover:bg-red-950/40 text-xs font-medium text-red-300 flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <span>Confidential</span>
-              </button>
-              <button
-                onClick={() => applyTemplate("minimal")}
-                className="p-2.5 rounded-xl border border-slate-700 bg-slate-950 hover:bg-slate-800 text-xs font-medium text-slate-300 flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <span>Minimal Dark</span>
-              </button>
-              <button
-                onClick={() => applyTemplate("podcast")}
-                className="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-950/40 text-xs font-medium text-emerald-300 flex items-center justify-center space-x-1.5 transition-colors"
-              >
-                <span>Audiobook</span>
-              </button>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {NATURE_PRESETS.map((n) => (
+                <button
+                  key={n.id}
+                  onClick={() =>
+                    onChangeSettings({
+                      ...settings,
+                      preset: n.id,
+                    })
+                  }
+                  className={`p-2 rounded-xl border text-xs font-medium flex items-center space-x-1.5 truncate transition-all ${
+                    settings.preset === n.id
+                      ? "border-emerald-500 bg-emerald-950/60 text-white ring-1 ring-emerald-500/50"
+                      : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
+                  }`}
+                >
+                  <span className="truncate">{n.name}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Background Styling */}
-          <div className="space-y-3 pt-3 border-t border-slate-800">
+          {/* Color & Solid Presets */}
+          <div className="space-y-3">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
               <Palette className="w-4 h-4 text-indigo-400" />
-              <span>Background Theme</span>
+              <span>Gradient & Custom Themes</span>
             </label>
 
             <div className="grid grid-cols-3 gap-2">
@@ -539,7 +674,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 
             <div className="pt-2">
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Custom Background Image:
+                Upload Custom Image:
               </label>
               <input
                 type="file"
@@ -570,14 +705,14 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     meetingTitle: e.target.value,
                   })
                 }
-                placeholder="Project Discussion - July 2026"
+                placeholder="Project Discussion - 2026"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Subtitle / Date
+                Subtitle / Details
               </label>
               <input
                 type="text"
@@ -588,14 +723,14 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     meetingSubtitle: e.target.value,
                   })
                 }
-                placeholder="Google Meet Hindi Recording • 45 Mins"
+                placeholder="Hindi/Hinglish Audio Recording • 45 Mins"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
-                Participants / Tags
+                Participants / Presenter
               </label>
               <input
                 type="text"
@@ -606,7 +741,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     participants: e.target.value,
                   })
                 }
-                placeholder="Hosted by Somit • Hindi/Hinglish Audio Track"
+                placeholder="Hosted by Somit • Internal Meeting Notes"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -648,29 +783,6 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                 />
               </div>
             )}
-
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-2">
-                Text Alignment:
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["left", "center", "right"] as const).map((align) => (
-                  <button
-                    key={align}
-                    onClick={() =>
-                      onChangeSettings({ ...settings, textAlign: align })
-                    }
-                    className={`py-1.5 rounded-lg border text-xs font-medium uppercase transition-colors ${
-                      settings.textAlign === align
-                        ? "border-indigo-500 bg-indigo-600/30 text-indigo-300"
-                        : "border-slate-800 bg-slate-950/60 text-slate-400"
-                    }`}
-                  >
-                    {align}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -698,15 +810,15 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 
             <div className="flex items-center justify-between text-xs text-slate-400 px-1">
               <span>
-                Output Resolution:{" "}
+                Resolution:{" "}
                 <span className="text-emerald-400 font-bold">
-                  {settings.resolution.width} x {settings.resolution.height} px ({settings.resolutionPreset})
+                  {settings.resolution.width} x {settings.resolution.height} px
                 </span>
               </span>
               <span>
-                Audio Mode:{" "}
-                <span className="text-indigo-300 font-semibold">
-                  {settings.audioCopyMode ? "Direct Copy (-c:a copy)" : "AAC Re-encoded"}
+                Spectrum:{" "}
+                <span className="text-purple-300 font-semibold">
+                  {settings.spectrumStyle === "ncs-circular" ? "⭕ NCS Circular Particles" : settings.spectrumStyle === "frequency-bars" ? "📊 Frequency Bars" : "Off"}
                 </span>
               </span>
             </div>

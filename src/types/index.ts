@@ -6,6 +6,11 @@ export type CanvasPreset =
   | "gradient-cyber"
   | "solid-slate"
   | "solid-midnight"
+  | "nature-forest"
+  | "nature-aurora"
+  | "nature-ocean"
+  | "nature-sunset"
+  | "nature-cosmic"
   | "custom-image";
 
 export type ResolutionPreset = "144p" | "240p" | "360p" | "720p" | "1080p";
@@ -32,6 +37,9 @@ export interface CanvasSettings {
   template: "google-meet" | "confidential" | "minimal" | "podcast";
   audioCopyMode: boolean; // Try copying audio stream directly without re-encoding
   frameRate: number; // 1 fps for extreme encoding speed
+  spectrumStyle: "ncs-circular" | "frequency-bars" | "none";
+  animatedVideoSpectrum: boolean; // Toggle: false = 3-sec Turbo WASM, true = dynamic video frames
+  spectrumColor: string;
 }
 
 export interface MediaFileState {
