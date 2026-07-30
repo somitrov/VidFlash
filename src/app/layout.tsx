@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "VidMeet Matrix | Client-Side Audio-to-Video Converter",
+  title: "VidScribe Matrix | Flash Transcription Powered by YouTube!",
   description:
     "Convert long meeting audio/video recordings into YouTube-accepted MP4 files with customizable visual banners locally in your browser for free YouTube auto-transcription.",
   icons: {
