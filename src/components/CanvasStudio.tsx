@@ -395,7 +395,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
       ctaY = cardY + cardHeight - 95;
     }
 
-    const vinylRadius = 96; // Extra large & crisp!
+    const vinylRadius = 112; // Even larger & extra crisp!
     const rotAngle = (animTick % 1000) * (Math.PI / 12); // 1 FPS rotation step
 
     ctx.save();
@@ -423,7 +423,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ctx.stroke();
 
     // 2. Concentric Vinyl Grooves
-    const grooveRadii = [88, 80, 72, 64, 56, 48];
+    const grooveRadii = [102, 93, 84, 75, 66, 57];
     grooveRadii.forEach((r) => {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, 2 * Math.PI);
@@ -440,7 +440,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ctx.stroke();
 
     // 4. Center Orange Label
-    const labelRadius = 35;
+    const labelRadius = 40;
     // Outer Red Border Ring
     ctx.beginPath();
     ctx.arc(0, 0, labelRadius + 3, 0, 2 * Math.PI);
@@ -482,13 +482,13 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 
     // --- B. METALLIC TONEARM NEEDLE (Rests Stationary on Vinyl Grooves) ---
     ctx.save();
-    const armPivotX = vinylX - vinylRadius - 20;
-    const armPivotY = vinylY - vinylRadius / 2 - 10;
+    const armPivotX = vinylX - vinylRadius - 22;
+    const armPivotY = vinylY - vinylRadius / 2 - 12;
 
     // Tonearm metallic curved arm
     ctx.beginPath();
     ctx.moveTo(armPivotX, armPivotY);
-    ctx.quadraticCurveTo(vinylX - 60, vinylY - 60, vinylX - 28, vinylY + 18);
+    ctx.quadraticCurveTo(vinylX - 70, vinylY - 70, vinylX - 32, vinylY + 22);
     ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
@@ -498,7 +498,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 
     // Needle cartridge & pin resting on grooves
     ctx.save();
-    ctx.translate(vinylX - 28, vinylY + 18);
+    ctx.translate(vinylX - 32, vinylY + 22);
     ctx.rotate(Math.PI / 6);
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(-5, -3, 14, 8);
@@ -682,7 +682,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.textAlign = "right";
     ctx.fillText(
-      "Powered by VidFlash.hirelancer.in",
+      "Powered by VidFlash.in",
       cardX + cardWidth - 35,
       cardY + cardHeight - 25
     );
@@ -1116,7 +1116,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     participants: e.target.value,
                   })
                 }
-                placeholder="Hosted by VidFlash.Hirelancer.in"
+                placeholder="Hosted by VidFlash.in"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>

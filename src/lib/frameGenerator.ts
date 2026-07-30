@@ -336,7 +336,7 @@ export async function generate1FPSAnimationSequence(
       ctaY = cardY + cardHeight - 95;
     }
 
-    const vinylRadius = 96; // Extra large & crisp!
+    const vinylRadius = 112; // Even larger & extra crisp!
     const rotAngle = tick * (Math.PI / 12); // 1 FPS vinyl rotation step
 
     ctx.save();
@@ -364,7 +364,7 @@ export async function generate1FPSAnimationSequence(
     ctx.stroke();
 
     // Concentric Vinyl Grooves
-    const grooveRadii = [88, 80, 72, 64, 56, 48];
+    const grooveRadii = [102, 93, 84, 75, 66, 57];
     grooveRadii.forEach((r) => {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, 2 * Math.PI);
@@ -381,7 +381,7 @@ export async function generate1FPSAnimationSequence(
     ctx.stroke();
 
     // Center Orange Label
-    const labelRadius = 35;
+    const labelRadius = 40;
     ctx.beginPath();
     ctx.arc(0, 0, labelRadius + 3, 0, 2 * Math.PI);
     ctx.fillStyle = "#b91c1c";
@@ -420,12 +420,12 @@ export async function generate1FPSAnimationSequence(
 
     // METALLIC TONEARM NEEDLE
     ctx.save();
-    const armPivotX = vinylX - vinylRadius - 20;
-    const armPivotY = vinylY - vinylRadius / 2 - 10;
+    const armPivotX = vinylX - vinylRadius - 22;
+    const armPivotY = vinylY - vinylRadius / 2 - 12;
 
     ctx.beginPath();
     ctx.moveTo(armPivotX, armPivotY);
-    ctx.quadraticCurveTo(vinylX - 60, vinylY - 60, vinylX - 28, vinylY + 18);
+    ctx.quadraticCurveTo(vinylX - 70, vinylY - 70, vinylX - 32, vinylY + 22);
     ctx.strokeStyle = "#cbd5e1";
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
@@ -434,7 +434,7 @@ export async function generate1FPSAnimationSequence(
     ctx.stroke();
 
     ctx.save();
-    ctx.translate(vinylX - 28, vinylY + 18);
+    ctx.translate(vinylX - 32, vinylY + 22);
     ctx.rotate(Math.PI / 6);
     ctx.fillStyle = "#1e293b";
     ctx.fillRect(-5, -3, 14, 8);
@@ -616,7 +616,7 @@ export async function generate1FPSAnimationSequence(
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.textAlign = "right";
     ctx.fillText(
-      "Powered by VidFlash.hirelancer.in",
+      "Powered by VidFlash.in",
       cardX + cardWidth - 35,
       cardY + cardHeight - 25
     );

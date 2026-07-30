@@ -33,7 +33,7 @@ export default function Home() {
     resolutionPreset: "144p",
     meetingTitle: "Google Meet Discussion",
     meetingSubtitle: "Hindi/Hinglish Audio Recording • 2026",
-    participants: "Hosted by VidFlash.Hirelancer.in",
+    participants: "Hosted by VidFlash.in",
     badgeText: "Presented by VidFlash",
     showBadge: true,
     titleColor: "#ffffff",
