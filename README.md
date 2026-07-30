@@ -73,7 +73,7 @@ npm install
 npm run dev
 ```
 
-Open https://vidscribe.hirelancer.in/ in your browser to start converting!
+Open https://vidflash.hirelancer.in/ in your browser to start converting!
 
 ---
 
