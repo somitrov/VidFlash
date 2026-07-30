@@ -1,8 +1,23 @@
 import type { Metadata } from "next";
+import { Poppins, Open_Sans } from "next/font/google";
 import "./globals.css";
 
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-open-sans",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "VidFlash Matrix | Ready Flash Transcription for YouTube!",
+  title: "VidFlash Matrix | Ready for YouTube Now!",
   description:
     "Convert long meeting audio/video recordings into YouTube-accepted MP4 files with customizable visual banners locally in your browser for free YouTube auto-transcription.",
   icons: {
@@ -18,9 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className={`dark ${poppins.variable} ${openSans.variable}`} suppressHydrationWarning>
       <body
-        className="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white"
+        className={`${openSans.className} font-sans bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white`}
         suppressHydrationWarning
       >
         {children}
@@ -28,3 +43,6 @@ export default function RootLayout({
     </html>
   );
 }
+
+
+

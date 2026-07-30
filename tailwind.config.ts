@@ -8,6 +8,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        poppins: ["var(--font-poppins)", "Poppins", "sans-serif"],
+        heading: ["var(--font-poppins)", "Poppins", "sans-serif"],
+        openSans: ["var(--font-open-sans)", "Open Sans", "sans-serif"],
+        sans: ["var(--font-open-sans)", "Open Sans", "system-ui", "sans-serif"],
+        stormGust: ["'Storm Gust'", "'StormGust'", "var(--font-poppins)", "sans-serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -17,3 +24,5 @@ const config: Config = {
   plugins: [],
 };
 export default config;
+
+

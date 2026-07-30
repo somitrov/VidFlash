@@ -1,6 +1,6 @@
 # ⚡ VidFlash Matrix (`v1.0 WASM`)
 
-> **Ready Flash Transcription for YouTube!**  
+> **Ready for YouTube Now!**  
 > Convert long audio & video meeting recordings into ultra-lightweight, YouTube-accepted MP4 files right inside your browser with **zero server uploads**. Unlock **100% free auto-transcription** and instant **AI meeting notes via Gemini & ChatGPT**.
 
 ---

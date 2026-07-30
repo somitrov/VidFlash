@@ -11,8 +11,10 @@ import {
   ArrowLeft,
   Volume2,
   Cpu,
+  CheckCircle2,
 } from "lucide-react";
 import { CanvasSettings, CanvasPreset, ResolutionPreset } from "@/types";
+import { SUBSCRIBE_BADGE_DATA_URL } from "@/lib/subscribeBadgeDataUrl";
 
 interface CanvasStudioProps {
   settings: CanvasSettings;
@@ -31,8 +33,28 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [bgImageElement, setBgImageElement] = useState<HTMLImageElement | null>(null);
+  const [bgVideoElement, setBgVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [logoImageElement, setLogoImageElement] = useState<HTMLImageElement | null>(null);
+  const [badgeImgElement, setBadgeImgElement] = useState<HTMLImageElement | null>(null);
+  const [animTick, setAnimTick] = useState(0);
 
-  // Load custom image when customBgImage changes
+  // Load 3D Subscribe Bell Badge Image Asset
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => setBadgeImgElement(img);
+    img.src = SUBSCRIBE_BADGE_DATA_URL;
+  }, []);
+
+  // 1 FPS animation tick timer (0% CPU overhead)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAnimTick((prev) => (prev + 1) % 1000);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load custom bg image when customBgImage changes
   useEffect(() => {
     if (settings.preset === "custom-image" && settings.customBgImage) {
       const img = new Image();
@@ -43,6 +65,37 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
       setBgImageElement(null);
     }
   }, [settings.preset, settings.customBgImage]);
+
+  // Load custom background video when customBgVideo changes
+  useEffect(() => {
+    if (settings.customBgVideo) {
+      const vid = document.createElement("video");
+      vid.crossOrigin = "anonymous";
+      vid.muted = true;
+      vid.loop = true;
+      vid.playsInline = true;
+      vid.autoplay = true;
+      vid.src = settings.customBgVideo;
+      vid.onloadeddata = () => {
+        vid.play().catch(() => {});
+        setBgVideoElement(vid);
+      };
+    } else {
+      setBgVideoElement(null);
+    }
+  }, [settings.customBgVideo]);
+
+  // Load custom channel logo when channelLogo changes
+  useEffect(() => {
+    if (settings.channelLogo) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => setLogoImageElement(img);
+      img.src = settings.channelLogo;
+    } else {
+      setLogoImageElement(null);
+    }
+  }, [settings.channelLogo]);
 
   // Render canvas at crisp 1280x720 baseline for live preview & PNG export
   useEffect(() => {
@@ -59,9 +112,13 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     canvas.height = height;
 
     // 1. Draw Background
-    if (settings.preset === "custom-image" && bgImageElement) {
+    if (bgVideoElement && bgVideoElement.readyState >= 2) {
+      ctx.drawImage(bgVideoElement, 0, 0, width, height);
+      ctx.fillStyle = `rgba(15, 23, 42, ${Math.min(settings.overlayOpacity, 0.45)})`;
+      ctx.fillRect(0, 0, width, height);
+    } else if (bgImageElement) {
       ctx.drawImage(bgImageElement, 0, 0, width, height);
-      ctx.fillStyle = `rgba(15, 23, 42, ${settings.overlayOpacity})`;
+      ctx.fillStyle = `rgba(15, 23, 42, ${Math.min(settings.overlayOpacity, 0.45)})`;
       ctx.fillRect(0, 0, width, height);
     } else {
       let grad = ctx.createLinearGradient(0, 0, width, height);
@@ -119,6 +176,81 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
       ctx.stroke();
     }
 
+    // 1.5 Geometric Style Particle Effect (1 FPS Animated Loop)
+    if (settings.showParticles) {
+      ctx.save();
+      const numParticles = 24;
+      const points: { x: number; y: number }[] = [];
+
+      for (let i = 0; i < numParticles; i++) {
+        const seedX = (i * 137.5 + 50) % width;
+        const seedY = (i * 223.1 + 40) % height;
+        const px = seedX + Math.sin(animTick * 0.4 + i * 0.7) * 45;
+        const py = seedY + Math.cos(animTick * 0.3 + i * 1.1) * 35;
+        points.push({ x: px, y: py });
+
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate((animTick + i) * 0.15);
+
+        ctx.strokeStyle =
+          i % 3 === 0
+            ? "rgba(129, 140, 248, 0.45)"
+            : i % 3 === 1
+            ? "rgba(236, 72, 153, 0.4)"
+            : "rgba(6, 182, 212, 0.4)";
+        ctx.lineWidth = 1.5;
+
+        if (i % 4 === 0) {
+          ctx.beginPath();
+          for (let h = 0; h < 6; h++) {
+            const hAngle = (h / 6) * 2 * Math.PI;
+            const hx = Math.cos(hAngle) * 12;
+            const hy = Math.sin(hAngle) * 12;
+            if (h === 0) ctx.moveTo(hx, hy);
+            else ctx.lineTo(hx, hy);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        } else if (i % 4 === 1) {
+          ctx.beginPath();
+          ctx.moveTo(0, -10);
+          ctx.lineTo(9, 7);
+          ctx.lineTo(-9, 7);
+          ctx.closePath();
+          ctx.stroke();
+        } else if (i % 4 === 2) {
+          ctx.beginPath();
+          ctx.rect(-6, -6, 12, 12);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(168, 85, 247, 0.6)";
+          ctx.beginPath();
+          ctx.arc(0, 0, 3.5, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Connecting constellation lines between nearby particles
+      ctx.strokeStyle = "rgba(99, 102, 241, 0.12)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const dx = points[i].x - points[j].x;
+          const dy = points[i].y - points[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 180) {
+            ctx.beginPath();
+            ctx.moveTo(points[i].x, points[i].y);
+            ctx.lineTo(points[j].x, points[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
+    }
+
     // 2. Container frame
     const padding = width * 0.06;
     const cardX = padding;
@@ -127,6 +259,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     const cardHeight = height - padding * 2;
 
     ctx.save();
+    ctx.beginPath();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
     ctx.fillStyle = "rgba(15, 23, 42, 0.5)";
@@ -138,8 +271,9 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     // 3. Confidentiality / Badge
     if (settings.showBadge && settings.badgeText) {
       ctx.save();
+      ctx.beginPath();
       const badgeFontSize = 14;
-      ctx.font = `700 ${badgeFontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `700 ${badgeFontSize}px 'Poppins', 'Open Sans', system-ui, -apple-system, sans-serif`;
       const badgeMetrics = ctx.measureText(settings.badgeText.toUpperCase());
       const badgePaddingX = 18;
       const badgePaddingY = 8;
@@ -175,7 +309,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     if (settings.fontSize === "large") titleFontSize = 56;
     if (settings.fontSize === "huge") titleFontSize = 64;
 
-    ctx.font = `800 ${titleFontSize}px system-ui, -apple-system, sans-serif`;
+    ctx.font = `800 ${titleFontSize}px 'Poppins', sans-serif`;
     ctx.fillStyle = settings.titleColor || "#ffffff";
     ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
     ctx.shadowBlur = 10;
@@ -216,7 +350,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     if (settings.meetingSubtitle) {
       ctx.save();
       const subFontSize = 22;
-      ctx.font = `600 ${subFontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `600 ${subFontSize}px 'Open Sans', 'Poppins', system-ui, -apple-system, sans-serif`;
       ctx.fillStyle = settings.subtitleColor || "#cbd5e1";
       ctx.textAlign = settings.textAlign;
       ctx.textBaseline = "top";
@@ -230,7 +364,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     if (settings.participants) {
       ctx.save();
       const partFontSize = 16;
-      ctx.font = `500 ${partFontSize}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `500 ${partFontSize}px 'Open Sans', 'Poppins', system-ui, -apple-system, sans-serif`;
       ctx.fillStyle = "#94a3b8";
       ctx.textAlign = settings.textAlign;
       ctx.textBaseline = "top";
@@ -240,27 +374,315 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
       ctx.restore();
     }
 
-    // 7. Audio Waveform Bar
-    const waveY = cardY + cardHeight - 65;
-    const waveWidth = cardWidth - 70;
-    const waveX = cardX + 35;
-    const barsCount = 50;
-    const barSpacing = waveWidth / barsCount;
+    // 7. Rotating Vinyl Record Turntable (1 FPS Animation) & Subscribe CTA Badge
+    let vinylX = cardX + 155;
+    let vinylY = cardY + cardHeight - 125; // Restored back to original higher position!
+    let ctaX = cardX + cardWidth - 160;
+    let ctaY = cardY + cardHeight - 95; // Down at bottom side!
 
-    ctx.save();
-    ctx.fillStyle = "rgba(99, 102, 241, 0.45)";
-    for (let i = 0; i < barsCount; i++) {
-      const barH = 12 + Math.abs(Math.sin(i * 0.3) * 28) + (i % 3 === 0 ? 12 : 0);
-      const bx = waveX + i * barSpacing;
-      ctx.fillRect(bx, waveY - barH / 2, barSpacing * 0.6, barH);
+    if (settings.textAlign === "center") {
+      vinylX = width / 2;
+      vinylY = startY + lines.length * lineHeight + (settings.meetingSubtitle ? 35 : 0) + (settings.participants ? 30 : 0) + 115;
+      if (vinylY > cardY + cardHeight - 130) {
+        vinylY = cardY + cardHeight - 130;
+      }
+      ctaX = width / 2;
+      ctaY = cardY + cardHeight - 35;
+    } else if (settings.textAlign === "right") {
+      vinylX = cardX + cardWidth - 155;
+      vinylY = cardY + cardHeight - 125;
+      ctaX = cardX + 160;
+      ctaY = cardY + cardHeight - 95;
     }
 
+    const vinylRadius = 96; // Extra large & crisp!
+    const rotAngle = (animTick % 1000) * (Math.PI / 12); // 1 FPS rotation step
+
+    ctx.save();
+
+    // --- A. ROTATING VINYL DISC & CENTER ORANGE LABEL ---
+    ctx.save();
+    ctx.translate(vinylX, vinylY);
+    ctx.rotate(rotAngle);
+
+    // 1. Outer Dark Vinyl Disc
+    ctx.beginPath();
+    ctx.arc(0, 0, vinylRadius, 0, 2 * Math.PI);
+    const discGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, vinylRadius);
+    discGrad.addColorStop(0, "#22262e");
+    discGrad.addColorStop(0.4, "#0f1115");
+    discGrad.addColorStop(0.8, "#1a1d24");
+    discGrad.addColorStop(1, "#07080a");
+    ctx.fillStyle = discGrad;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+    ctx.shadowBlur = 15;
+    ctx.fill();
+
+    ctx.strokeStyle = "#383d47";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 2. Concentric Vinyl Grooves
+    const grooveRadii = [88, 80, 72, 64, 56, 48];
+    grooveRadii.forEach((r) => {
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // 3. Glossy Refraction Sheen Highlight
+    ctx.beginPath();
+    ctx.arc(0, 0, vinylRadius - 4, -Math.PI / 4, Math.PI / 6);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // 4. Center Orange Label
+    const labelRadius = 35;
+    // Outer Red Border Ring
+    ctx.beginPath();
+    ctx.arc(0, 0, labelRadius + 3, 0, 2 * Math.PI);
+    ctx.fillStyle = "#b91c1c";
+    ctx.fill();
+
+    // Inner Amber/Orange Circle
+    ctx.beginPath();
+    ctx.arc(0, 0, labelRadius, 0, 2 * Math.PI);
+    ctx.fillStyle = "#f59e0b";
+    ctx.fill();
+
+    // 5. Inside Orange Label: Uploaded Channel Logo or Spindle Center
+    if (logoImageElement) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, 0, labelRadius, 0, 2 * Math.PI);
+      ctx.clip(); // Clips image cleanly into center orange circle!
+      ctx.drawImage(
+        logoImageElement,
+        -labelRadius,
+        -labelRadius,
+        labelRadius * 2,
+        labelRadius * 2
+      );
+      ctx.restore();
+    } else {
+      // Center Spindle Hole
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+      ctx.strokeStyle = "#92400e";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    ctx.restore(); // End vinyl rotation transform
+
+    // --- B. METALLIC TONEARM NEEDLE (Rests Stationary on Vinyl Grooves) ---
+    ctx.save();
+    const armPivotX = vinylX - vinylRadius - 20;
+    const armPivotY = vinylY - vinylRadius / 2 - 10;
+
+    // Tonearm metallic curved arm
+    ctx.beginPath();
+    ctx.moveTo(armPivotX, armPivotY);
+    ctx.quadraticCurveTo(vinylX - 60, vinylY - 60, vinylX - 28, vinylY + 18);
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+
+    // Needle cartridge & pin resting on grooves
+    ctx.save();
+    ctx.translate(vinylX - 28, vinylY + 18);
+    ctx.rotate(Math.PI / 6);
+    ctx.fillStyle = "#1e293b";
+    ctx.fillRect(-5, -3, 14, 8);
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(5, -1.5, 4, 5);
+    ctx.restore();
+
+    // Arm pivot base
+    ctx.beginPath();
+    ctx.arc(armPivotX, armPivotY, 9, 0, 2 * Math.PI);
+    ctx.fillStyle = "#475569";
+    ctx.fill();
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // --- C. DYNAMIC 3D YOUTUBE SUBSCRIBE & GOLDEN BELL BADGE ---
+    if (settings.showCta && settings.ctaText) {
+      ctx.save();
+      const textUpper = settings.ctaText.toUpperCase();
+
+      ctx.font = `800 14px 'Poppins', sans-serif`;
+      const textMetrics = ctx.measureText(textUpper);
+      const textW = textMetrics.width;
+
+      const badgeH = 46;
+      const playDiscRadius = 20;
+      const bellRadius = 18;
+      const badgeW = Math.max(180, playDiscRadius * 2 + textW + bellRadius * 2 + 22);
+
+      const ctaLeft = ctaX - badgeW / 2;
+      const ctaTop = ctaY - badgeH / 2;
+
+      // 1. Red 3D Pill Container Body (Gradient + 3D drop shadow)
+      ctx.save();
+      ctx.shadowColor = "rgba(220, 38, 38, 0.65)";
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 4;
+
+      const redGrad = ctx.createLinearGradient(
+        ctaLeft,
+        ctaTop,
+        ctaLeft,
+        ctaTop + badgeH
+      );
+      redGrad.addColorStop(0, "#ef4444");
+      redGrad.addColorStop(0.4, "#dc2626");
+      redGrad.addColorStop(1, "#b91c1c");
+      ctx.fillStyle = redGrad;
+
+      ctx.beginPath();
+      ctx.roundRect(ctaLeft + 8, ctaTop, badgeW - 16, badgeH, 100);
+      ctx.fill();
+
+      // Top Highlight Edge for 3D Bevel
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.35)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Left 3D White Circular Play Button Disc
+      const discCenterX = ctaLeft + playDiscRadius + 6;
+      const discCenterY = ctaTop + badgeH / 2;
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0, 0, 0, 0.35)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetY = 2;
+
+      ctx.beginPath();
+      ctx.arc(discCenterX, discCenterY, playDiscRadius, 0, 2 * Math.PI);
+      const discGrad = ctx.createLinearGradient(
+        discCenterX - playDiscRadius,
+        discCenterY - playDiscRadius,
+        discCenterX + playDiscRadius,
+        discCenterY + playDiscRadius
+      );
+      discGrad.addColorStop(0, "#ffffff");
+      discGrad.addColorStop(1, "#e2e8f0");
+      ctx.fillStyle = discGrad;
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Inner Red Play Triangle
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#dc2626";
+      ctx.beginPath();
+      ctx.moveTo(discCenterX - 4, discCenterY - 7);
+      ctx.lineTo(discCenterX + 7, discCenterY);
+      ctx.lineTo(discCenterX - 4, discCenterY + 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // 3. Dynamic Custom Text
+      ctx.save();
+      ctx.font = `800 13px 'Poppins', sans-serif`;
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 1;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(textUpper, ctaLeft + playDiscRadius * 2 + 13, discCenterY + 1);
+      ctx.restore();
+
+      // 4. Right 3D Golden Notification Bell Icon (Bigger & 3D Shaded)
+      const bellCenterX = ctaLeft + badgeW - 10;
+      const bellCenterY = ctaTop + badgeH / 2;
+
+      ctx.save();
+      ctx.translate(bellCenterX, bellCenterY);
+      ctx.rotate(-Math.PI / 16); // Tilted 3D dynamic angle
+      ctx.scale(1.45, 1.45); // 1.45x bigger!
+
+      // Bell 3D Glow Drop Shadow
+      ctx.shadowColor = "rgba(245, 158, 11, 0.85)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 3;
+
+      // Main Golden Bell Dome Body
+      ctx.beginPath();
+      ctx.moveTo(-13, 6);
+      ctx.bezierCurveTo(-13, -10, -10, -15, 0, -15);
+      ctx.bezierCurveTo(10, -15, 13, -10, 13, 6);
+      ctx.lineTo(16, 10);
+      ctx.lineTo(-16, 10);
+      ctx.closePath();
+
+      const bellGrad = ctx.createLinearGradient(-13, -15, 13, 10);
+      bellGrad.addColorStop(0, "#fff59d");
+      bellGrad.addColorStop(0.3, "#fde047");
+      bellGrad.addColorStop(0.7, "#f59e0b");
+      bellGrad.addColorStop(1, "#b45309");
+      ctx.fillStyle = bellGrad;
+      ctx.fill();
+
+      ctx.strokeStyle = "#fef08a";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 3D Glossy Reflection Line
+      ctx.beginPath();
+      ctx.moveTo(-6, -8);
+      ctx.bezierCurveTo(-6, -4, -5, 0, -5, 4);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      // Bell Top Handle Ring
+      ctx.beginPath();
+      ctx.arc(0, -15, 4.5, Math.PI, 2 * Math.PI);
+      ctx.strokeStyle = "#f59e0b";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Bell Clapper Ball (Bottom)
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(0, 12.5, 4.5, 0, 2 * Math.PI);
+      const clapperGrad = ctx.createRadialGradient(0, 12.5, 1, 0, 12.5, 4.5);
+      clapperGrad.addColorStop(0, "#f59e0b");
+      clapperGrad.addColorStop(1, "#78350f");
+      ctx.fillStyle = clapperGrad;
+      ctx.fill();
+
+      ctx.restore(); // End Bell transform
+
+      ctx.restore(); // End CTA badge transform
+    }
+
+    ctx.restore();
+
     const footerFontSize = 13;
-    ctx.font = `600 ${footerFontSize}px system-ui, -apple-system, sans-serif`;
+    ctx.font = `600 ${footerFontSize}px 'Open Sans', 'Poppins', system-ui, -apple-system, sans-serif`;
     ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
     ctx.textAlign = "right";
     ctx.fillText(
-      `VIDFLASH MATRIX • ${settings.resolutionPreset.toUpperCase()} 1FPS ULTRA-FAST MODE`,
+      "Powered by VidFlash.hirelancer.in",
       cardX + cardWidth - 35,
       cardY + cardHeight - 25
     );
@@ -268,7 +690,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
 
     const dataUrl = canvas.toDataURL("image/png");
     onCanvasDataUrlChange(dataUrl);
-  }, [settings, bgImageElement]);
+  }, [settings, bgImageElement, bgVideoElement, logoImageElement, animTick]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -284,16 +706,30 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     }
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        onChangeSettings({
+          ...settings,
+          channelLogo: event.target?.result as string,
+        });
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
   const applyTemplate = (tpl: "google-meet" | "confidential" | "minimal" | "podcast") => {
+    const keepPreset = settings.customBgImage ? "custom-image" : undefined;
     switch (tpl) {
       case "google-meet":
         onChangeSettings({
           ...settings,
           template: "google-meet",
-          preset: "gradient-indigo",
+          preset: keepPreset || "gradient-indigo",
           showBadge: true,
-          badgeText: "GOOGLE MEET RECORDING",
-          badgeColor: "#6366f1",
+          badgeText: "Presented by VidFlash",
+          badgeColor: "#7c3aed",
           titleColor: "#ffffff",
           subtitleColor: "#cbd5e1",
           textAlign: "left",
@@ -303,7 +739,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         onChangeSettings({
           ...settings,
           template: "confidential",
-          preset: "gradient-sunset",
+          preset: keepPreset || "gradient-sunset",
           showBadge: true,
           badgeText: "INTERNAL DISCUSSION • CONFIDENTIAL",
           badgeColor: "#ef4444",
@@ -316,7 +752,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         onChangeSettings({
           ...settings,
           template: "minimal",
-          preset: "solid-midnight",
+          preset: keepPreset || "solid-midnight",
           showBadge: false,
           titleColor: "#f8fafc",
           subtitleColor: "#94a3b8",
@@ -327,9 +763,9 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
         onChangeSettings({
           ...settings,
           template: "podcast",
-          preset: "gradient-emerald",
+          preset: keepPreset || "gradient-emerald",
           showBadge: true,
-          badgeText: "AUDIO TRANSCRIPTION MODE",
+          badgeText: "Presented by VidFlash",
           badgeColor: "#10b981",
           titleColor: "#ffffff",
           subtitleColor: "#6ee7b7",
@@ -423,8 +859,8 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     })
                   }
                   className={`relative p-2.5 rounded-xl border text-left flex flex-col justify-between transition-all ${settings.resolutionPreset === r.id
-                      ? "border-emerald-500 bg-emerald-950/40 text-white ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-500/10"
-                      : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
+                    ? "border-emerald-500 bg-emerald-950/40 text-white ring-1 ring-emerald-500/50 shadow-lg shadow-emerald-500/10"
+                    : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
                     }`}
                 >
                   {r.recommended && (
@@ -452,17 +888,10 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                 </p>
               </div>
 
-              <input
-                type="checkbox"
-                checked={settings.audioCopyMode}
-                onChange={(e) =>
-                  onChangeSettings({
-                    ...settings,
-                    audioCopyMode: e.target.checked,
-                  })
-                }
-                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer shrink-0 ml-2"
-              />
+              <div className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-[11px] shrink-0 ml-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>PERMANENT LOSSLESS</span>
+              </div>
             </div>
           </div>
 
@@ -525,14 +954,33 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     })
                   }
                   className={`p-2 rounded-xl border text-xs font-medium flex items-center space-x-2 transition-all ${settings.preset === p.id
-                      ? "border-indigo-500 bg-indigo-950/60 text-white ring-1 ring-indigo-500/50"
-                      : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
+                    ? "border-indigo-500 bg-indigo-950/60 text-white ring-1 ring-indigo-500/50"
+                    : "border-slate-800 bg-slate-950/50 text-slate-400 hover:text-slate-200"
                     }`}
                 >
                   <span className={`w-3.5 h-3.5 rounded-full ${p.color}`} />
                   <span className="truncate">{p.name}</span>
                 </button>
               ))}
+            </div>
+
+            <div className="pt-2 flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+              <label htmlFor="showParticles" className="text-xs font-semibold text-indigo-300 flex items-center space-x-2 cursor-pointer">
+                <Sparkles className="w-4 h-4 text-purple-400" />
+                <span>Enable 1 FPS Geometry Particle Effects</span>
+              </label>
+              <input
+                id="showParticles"
+                type="checkbox"
+                checked={settings.showParticles}
+                onChange={(e) =>
+                  onChangeSettings({
+                    ...settings,
+                    showParticles: e.target.checked,
+                  })
+                }
+                className="w-4 h-4 rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-950 cursor-pointer"
+              />
             </div>
 
             <div className="pt-2">
@@ -545,6 +993,34 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                 onChange={handleImageUpload}
                 className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-indigo-300 hover:file:bg-slate-700 cursor-pointer"
               />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Supports PNG, JPG, WebP & custom photo background images.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <label className="block text-xs font-semibold text-indigo-300 mb-1 flex items-center justify-between">
+                <span>Channel / Brand Logo (Inside Vinyl Center):</span>
+                {settings.channelLogo && (
+                  <button
+                    onClick={() => onChangeSettings({ ...settings, channelLogo: null })}
+                    className="text-[10px] text-red-400 hover:text-red-300 underline"
+                  >
+                    Remove Logo
+                  </button>
+                )}
+              </label>
+              <input
+                type="file"
+                accept="image/*,.gif"
+                onChange={handleLogoUpload}
+                className="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-950 file:text-indigo-300 hover:file:bg-indigo-900 border border-indigo-500/30 rounded-xl cursor-pointer"
+              />
+              {settings.channelLogo && (
+                <p className="text-[11px] text-emerald-400 font-semibold mt-1">
+                  ✓ Channel logo loaded into center orange vinyl disc!
+                </p>
+              )}
             </div>
           </div>
 
@@ -552,8 +1028,44 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
           <div className="space-y-4 pt-3 border-t border-slate-800">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
               <Type className="w-4 h-4 text-purple-400" />
-              <span>Text Overlay Content</span>
+              <span>Text Overlay & CTA Content</span>
             </label>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1">
+                Call To Action (CTA) Button Text
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={settings.ctaText}
+                  onChange={(e) =>
+                    onChangeSettings({
+                      ...settings,
+                      ctaText: e.target.value,
+                    })
+                  }
+                  placeholder="SUBSCRIBE NOW"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-red-500"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChangeSettings({
+                      ...settings,
+                      showCta: !settings.showCta,
+                    })
+                  }
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+                    settings.showCta
+                      ? "bg-red-600 text-white border-red-500"
+                      : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+                  }`}
+                >
+                  {settings.showCta ? "Shown" : "Hidden"}
+                </button>
+              </div>
+            </div>
 
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1">
@@ -604,7 +1116,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                     participants: e.target.value,
                   })
                 }
-                placeholder="Hosted by Somit • Hindi/Hinglish Audio Track"
+                placeholder="Hosted by VidFlash.Hirelancer.in"
                 className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -659,8 +1171,8 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
                       onChangeSettings({ ...settings, textAlign: align })
                     }
                     className={`py-1.5 rounded-lg border text-xs font-medium uppercase transition-colors ${settings.textAlign === align
-                        ? "border-indigo-500 bg-indigo-600/30 text-indigo-300"
-                        : "border-slate-800 bg-slate-950/60 text-slate-400"
+                      ? "border-indigo-500 bg-indigo-600/30 text-indigo-300"
+                      : "border-slate-800 bg-slate-950/60 text-slate-400"
                       }`}
                   >
                     {align}

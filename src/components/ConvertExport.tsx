@@ -16,6 +16,8 @@ import {
 import confetti from "canvas-confetti";
 import { MediaFileState, CanvasSettings } from "@/types";
 import { processAudioToVideo } from "@/lib/ffmpeg";
+import { generate1FPSAnimationSequence } from "@/lib/frameGenerator";
+import { playVictorySound } from "@/lib/soundEffects";
 
 interface ConvertExportProps {
   mediaState: MediaFileState;
@@ -85,9 +87,17 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
         })...`
       );
 
+      addLog("Generating 1 FPS animation sequence (rotating vinyl + geometry particles)...");
+      const frameSequenceDataUrls = await generate1FPSAnimationSequence(
+        settings,
+        canvasDataUrl,
+        12
+      );
+
       const blob = await processAudioToVideo({
         mediaFile: mediaState.file,
         canvasDataUrl,
+        frameSequenceDataUrls,
         duration: mediaState.duration,
         resolution: settings.resolution,
         audioCopyMode: settings.audioCopyMode,
@@ -114,6 +124,7 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
       setProgress(100);
 
       try {
+        playVictorySound();
         confetti({
           particleCount: 100,
           spread: 70,

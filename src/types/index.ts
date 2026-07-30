@@ -30,6 +30,11 @@ export interface CanvasSettings {
   fontSize: "normal" | "large" | "huge";
   textAlign: "left" | "center" | "right";
   template: "google-meet" | "confidential" | "minimal" | "podcast";
+  channelLogo: string | null; // Custom uploaded channel/brand logo Data URL
+  customBgVideo: string | null; // Custom uploaded background video or GIF URL
+  ctaText: string; // "SUBSCRIBE NOW" or custom Call To Action
+  showCta: boolean;
+  showParticles: boolean; // Geometric floating particle effects toggle
   audioCopyMode: boolean; // Try copying audio stream directly without re-encoding
   frameRate: number; // 1 fps for extreme encoding speed
 }

@@ -58,6 +58,7 @@ export async function getFFmpegInstance(
 export async function processAudioToVideo({
   mediaFile,
   canvasDataUrl,
+  frameSequenceDataUrls,
   duration,
   resolution,
   audioCopyMode = true,
@@ -66,6 +67,7 @@ export async function processAudioToVideo({
 }: {
   mediaFile: File;
   canvasDataUrl: string;
+  frameSequenceDataUrls?: string[];
   duration: number;
   resolution: { width: number; height: number };
   audioCopyMode?: boolean;
@@ -81,15 +83,27 @@ export async function processAudioToVideo({
     onProgress(percent, processedSec);
   });
 
-  onLog("Writing banner frame and media file to browser virtual memory...");
+  onLog("Writing 1 FPS animated frames and media file to browser virtual memory...");
 
-  // 1. Write Canvas PNG to Virtual FS
-  const res = await fetch(canvasDataUrl);
-  const imageBlob = await res.blob();
-  const imageBytes = new Uint8Array(await imageBlob.arrayBuffer());
-  await ffmpeg.writeFile("banner.png", imageBytes);
+  let hasFrameSequence = false;
+  if (frameSequenceDataUrls && frameSequenceDataUrls.length > 0) {
+    hasFrameSequence = true;
+    for (let i = 0; i < frameSequenceDataUrls.length; i++) {
+      const res = await fetch(frameSequenceDataUrls[i]);
+      const imageBlob = await res.blob();
+      const imageBytes = new Uint8Array(await imageBlob.arrayBuffer());
+      const numStr = String(i + 1).padStart(2, "0");
+      await ffmpeg.writeFile(`frame_${numStr}.png`, imageBytes);
+    }
+  } else {
+    // Write Single Banner Frame
+    const res = await fetch(canvasDataUrl);
+    const imageBlob = await res.blob();
+    const imageBytes = new Uint8Array(await imageBlob.arrayBuffer());
+    await ffmpeg.writeFile("banner.png", imageBytes);
+  }
 
-  // 2. Write Media File to Virtual FS
+  // Write Media File to Virtual FS
   const fileExt = mediaFile.name.split(".").pop()?.toLowerCase() || "mp3";
   const mediaInputName = `input_media.${fileExt}`;
   const mediaData = await fetchFile(mediaFile);
@@ -100,7 +114,7 @@ export async function processAudioToVideo({
   const targetHeight = Math.floor(resolution.height / 2) * 2;
 
   onLog(
-    `🚀 EXECUTING HYPER-TURBO ENGINE (${targetWidth}x${targetHeight}, 1 FPS, Skip-Frame Optimization)...`
+    `🚀 EXECUTING HYPER-TURBO ENGINE (${targetWidth}x${targetHeight}, 1 FPS Animated Sequence)...`
   );
 
   const outputFileName = "output.mp4";
@@ -109,17 +123,11 @@ export async function processAudioToVideo({
   const isDirectCopyableAudio =
     audioCopyMode && ["mp3", "aac", "m4a", "mp4"].includes(fileExt);
 
-  // HYPER-OPTIMIZED x264 PARAMETERS FOR MAXIMUM BROWSER SPEED:
-  // -x264opts no-scenecut=1:bframes=0:ref=1:subme=0:me=dia:no-cabac=1:keyint=3600
-  // Disables scene detection, B-frames, subpixel motion estimation & CABAC.
-  // Sets GOP keyframe interval to 3600s so x264 writes skip blocks for duplicate static frames!
+  // OPTIMIZED 1 FPS ANIMATED VIDEO PARAMETERS:
   const buildHyperArgs = (useCopy: boolean) => [
-    "-loop",
-    "1",
-    "-framerate",
-    "1",
-    "-i",
-    "banner.png",
+    ...(hasFrameSequence
+      ? ["-stream_loop", "-1", "-framerate", "1", "-i", "frame_%02d.png"]
+      : ["-loop", "1", "-framerate", "1", "-i", "banner.png"]),
     "-i",
     mediaInputName,
     "-map",
@@ -132,16 +140,12 @@ export async function processAudioToVideo({
     "libx264",
     "-preset",
     "ultrafast",
-    "-tune",
-    "stillimage",
     "-profile:v",
     "baseline",
     "-level",
     "3.0",
-    "-x264opts",
-    "no-scenecut=1:bframes=0:ref=1:subme=0:me=dia:no-cabac=1:keyint=3600",
     "-g",
-    "3600",
+    "1",
     "-r",
     "1",
     "-threads",
