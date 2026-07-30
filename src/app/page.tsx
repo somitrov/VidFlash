@@ -44,9 +44,6 @@ export default function Home() {
     template: "google-meet",
     audioCopyMode: true,
     frameRate: 1,
-    spectrumStyle: "ncs-circular",
-    animatedVideoSpectrum: false,
-    spectrumColor: "#818cf8",
   });
 
   // Data URL exported by CanvasStudio
