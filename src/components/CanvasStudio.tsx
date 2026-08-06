@@ -13,6 +13,7 @@ import {
   Cpu,
   CheckCircle2,
 } from "lucide-react";
+import { AdSenseBanner } from "@/components/AdSenseBanner";
 import { CanvasSettings, CanvasPreset, ResolutionPreset } from "@/types";
 import { SUBSCRIBE_BADGE_DATA_URL } from "@/lib/subscribeBadgeDataUrl";
 
@@ -1217,6 +1218,9 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Non-intrusive Minimalist Ad Banner */}
+          <AdSenseBanner />
 
           <div className="flex items-center justify-between pt-2">
             <button

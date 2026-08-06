@@ -13,6 +13,7 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
+import { AdSenseBanner } from "@/components/AdSenseBanner";
 import confetti from "canvas-confetti";
 import { MediaFileState, CanvasSettings } from "@/types";
 import { processAudioToVideo } from "@/lib/ffmpeg";
@@ -327,6 +328,9 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Non-intrusive Minimalist Ad Banner */}
+      <AdSenseBanner />
 
       <div className="flex items-center justify-between pt-2">
         <button

@@ -14,6 +14,7 @@ import {
   Zap,
 } from "lucide-react";
 import { MediaFileState } from "@/types";
+import { AdSenseBanner } from "@/components/AdSenseBanner";
 
 interface FileIngestionProps {
   mediaState: MediaFileState;
@@ -295,6 +296,9 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
           </div>
         </div>
       )}
+
+      {/* Non-intrusive Auto-Optimized Ad Banner */}
+      <AdSenseBanner />
     </div>
   );
 };

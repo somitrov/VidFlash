@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   CheckCircle2,
 } from "lucide-react";
+import { AdSenseBanner } from "@/components/AdSenseBanner";
 
 interface YouTubePipelineGuideProps {
   onPrevStep?: () => void;
@@ -83,6 +84,9 @@ export const YouTubePipelineGuide: React.FC<YouTubePipelineGuideProps> = ({
           Follow these 3 simple steps to convert your uploaded video into complete Hindi meeting notes for free using YouTube & Google AI Studio.
         </p>
       </div>
+
+      {/* Non-intrusive Minimalist Ad Banner */}
+      <AdSenseBanner />
 
       {/* 3 Step Pipeline Grid */}
       <div className="grid grid-cols-1 gap-6">

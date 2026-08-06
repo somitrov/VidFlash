@@ -34,6 +34,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark ${poppins.variable} ${openSans.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5874089918467100"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className={`${openSans.className} font-sans bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white`}
         suppressHydrationWarning
