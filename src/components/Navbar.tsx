@@ -1,13 +1,19 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Video, Cpu, HelpCircle } from "lucide-react";
+import { ShieldCheck, Video, Cpu, HelpCircle, FileText, Info } from "lucide-react";
 
 interface NavbarProps {
   onOpenGuide: () => void;
+  onOpenLegal: (type: "privacy" | "terms" | "contact") => void;
+  onScrollToFAQ: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenGuide,
+  onOpenLegal,
+  onScrollToFAQ,
+}) => {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -23,7 +29,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide }) => {
           <div>
             <div className="flex items-center space-x-2">
               <h1 className="text-xl font-extrabold font-poppins bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-                <span className="font-black text-white">VidFlash</span> <span className="text-indigo-400 font-extrabold">Matrix</span>
+                <span className="font-black text-white">VidFlash</span>{" "}
+                <span className="text-indigo-400 font-extrabold">Matrix</span>
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold font-poppins tracking-wide uppercase rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
                 v1.0 WASM
@@ -36,22 +43,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenGuide }) => {
         </div>
 
         {/* Badges & Actions */}
-        <div className="flex items-center space-x-3">
-          <div className="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          <div className="hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>100% Private (Zero Server Upload)</span>
-          </div>
-
-          <div className="hidden lg:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs text-slate-300">
-            <Cpu className="w-4 h-4 text-purple-400" />
-            <span>144p 1FPS Turbo WASM</span>
+            <span>100% Private</span>
           </div>
 
           <button
-            onClick={onOpenGuide}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs font-medium transition-colors"
+            onClick={onScrollToFAQ}
+            className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-colors"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-3.5 h-3.5 text-indigo-400" />
+            <span>FAQ</span>
+          </button>
+
+          <button
+            onClick={() => onOpenLegal("privacy")}
+            className="hidden md:flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-medium transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Privacy</span>
+          </button>
+
+          <button
+            onClick={onOpenGuide}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/40 hover:to-purple-600/40 border border-indigo-500/40 text-indigo-200 text-xs font-semibold transition-all"
+          >
+            <HelpCircle className="w-4 h-4 text-indigo-400" />
             <span className="hidden sm:inline">YouTube + Hindi Guide</span>
           </button>
         </div>
