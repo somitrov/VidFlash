@@ -17,13 +17,26 @@ export type TransitionEffect =
   | "cut"
   | "crossfade"
   | "fade-to-black"
+  | "flash-white"
+  | "light-leak"
+  | "glow-flash"
+  | "zoom-in"
+  | "zoom-out"
+  | "zoom-blur"
+  | "glitch"
+  | "stretch-glow"
+  | "whip-pan-left"
+  | "whip-pan-right"
+  | "whip-pan-up"
+  | "whip-pan-down"
   | "wipe-left"
   | "wipe-right"
   | "slide-left"
   | "slide-right"
-  | "zoom-in"
   | "circle-open"
-  | "flash-white";
+  | "spin-360";
+
+export type HardwareProfile = "balanced" | "turbo" | "silent";
 
 export interface StudioSettings {
   fadeInSec: number;
@@ -31,9 +44,21 @@ export interface StudioSettings {
   randomTransitions: boolean;
   selectedTransition: TransitionEffect;
   fps: 24 | 30 | 60;
+  qualityPreset: "optimized" | "high" | "compact";
+  hardwareProfile: HardwareProfile;
   enableSfx: boolean;
+  selectedSfxId?: string;
   enableParticles: boolean;
   enableGlow: boolean;
+  // Visual Effects & Overlays Suite
+  enableFilmGrain?: boolean;
+  enableOldCinema?: boolean;
+  enableGeometricGrid?: boolean;
+  enableBlackAndWhite?: boolean;
+  enableVhsScanlines?: boolean;
+  enableLetterbox?: boolean;
+  enablePrismGlow?: boolean;
+  enableVintageSepia?: boolean;
 }
 
 export interface TimelineClip {
@@ -99,8 +124,18 @@ export interface ExportConfig {
   resolution: ResolutionDimensions;
   fps: 24 | 30 | 60;
   format: "mp4" | "webm";
+  qualityPreset?: "optimized" | "high" | "compact";
+  hardwareProfile?: HardwareProfile;
   fadeInSec?: number;
   fadeOutSec?: number;
   enableParticles?: boolean;
   enableGlow?: boolean;
+  enableFilmGrain?: boolean;
+  enableOldCinema?: boolean;
+  enableGeometricGrid?: boolean;
+  enableBlackAndWhite?: boolean;
+  enableVhsScanlines?: boolean;
+  enableLetterbox?: boolean;
+  enablePrismGlow?: boolean;
+  enableVintageSepia?: boolean;
 }

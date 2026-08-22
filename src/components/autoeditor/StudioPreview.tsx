@@ -6,10 +6,13 @@ import {
   Pause,
   RotateCcw,
   RotateCw,
+  SkipBack,
+  SkipForward,
+  Square,
+  Maximize2,
   Tv,
   Smartphone,
-  Square,
-  Sparkles,
+  Repeat,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -32,6 +35,8 @@ interface StudioPreviewProps {
   isPlaying: boolean;
   aspectRatio: AspectRatioPreset;
   resolution: ResolutionDimensions;
+  projectName?: string;
+  totalClipsCount?: number;
   onTogglePlay: () => void;
   onSeek: (timeSec: number) => void;
   onChangeAspectRatio: (ratio: AspectRatioPreset) => void;
@@ -47,6 +52,8 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
   isPlaying,
   aspectRatio,
   resolution,
+  projectName,
+  totalClipsCount,
   onTogglePlay,
   onSeek,
   onChangeAspectRatio,
@@ -63,6 +70,17 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
       : clips.length > 0 && currentTimeSec >= totalDurationSec
       ? clips.length
       : 1;
+
+  // Single Button Aspect Ratio Layering / Cycling: 16:9 -> 9:16 -> 1:1 -> 16:9
+  const handleCycleAspectRatio = () => {
+    if (aspectRatio === "16:9") {
+      onChangeAspectRatio("9:16");
+    } else if (aspectRatio === "9:16") {
+      onChangeAspectRatio("1:1");
+    } else {
+      onChangeAspectRatio("16:9");
+    }
+  };
 
   // 60FPS Live Canvas Render Loop
   useEffect(() => {
@@ -84,6 +102,14 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
       fadeOutSec: settings.fadeOutSec,
       enableParticles: settings.enableParticles,
       enableGlow: settings.enableGlow,
+      enableFilmGrain: settings.enableFilmGrain,
+      enableOldCinema: settings.enableOldCinema,
+      enableGeometricGrid: settings.enableGeometricGrid,
+      enableBlackAndWhite: settings.enableBlackAndWhite,
+      enableVhsScanlines: settings.enableVhsScanlines,
+      enableLetterbox: settings.enableLetterbox,
+      enablePrismGlow: settings.enablePrismGlow,
+      enableVintageSepia: settings.enableVintageSepia,
     });
   }, [
     currentTimeSec,
@@ -96,91 +122,128 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
   ]);
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur-md space-y-3.5 flex flex-col justify-between shadow-2xl">
-      {/* Main Canvas Viewport Container */}
-      <div className="relative w-full flex items-center justify-center min-h-[320px] max-h-[460px] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800/90 p-2">
+    <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl flex flex-col justify-between h-[520px]">
+      {/* DaVinci Resolve Viewer Top Bar with Project Name & Images Info */}
+      <div className="bg-[#121215] border-b border-[#2b2b36] px-3 py-1.5 flex items-center justify-between font-mono text-xs text-slate-300">
+        <div className="flex items-center space-x-2">
+          <span className="text-amber-400 font-bold">
+            {formatSecondsToTimecode(currentTimeSec)}
+          </span>
+        </div>
+
+        {/* Center: Sequence & Project Name Replacement */}
+        <div className="flex items-center space-x-2 max-w-[240px] sm:max-w-xs truncate">
+          <span className="text-[11px] font-bold text-white bg-[#1e1e26] px-2.5 py-0.5 rounded border border-[#2b2b36] truncate">
+            {projectName || "Auto-Sync Sequence"}
+          </span>
+          {totalClipsCount !== undefined && totalClipsCount > 0 && (
+            <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-500/30 px-2 py-0.5 rounded shrink-0">
+              {totalClipsCount} Images
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-slate-400">
+            {formatSecondsToTimecode(totalDurationSec)}
+          </span>
+        </div>
+      </div>
+
+      {/* Center Canvas Viewport */}
+      <div className="relative flex-1 w-full flex items-center justify-center bg-[#09090b] overflow-hidden p-2">
         <canvas
           ref={canvasRef}
           width={resolution.width}
           height={resolution.height}
-          className="max-w-full max-h-[420px] object-contain rounded-xl shadow-2xl transition-all duration-200"
+          className="max-w-full max-h-[380px] object-contain rounded shadow-2xl transition-all duration-200 border border-[#1f1f26]"
         />
 
         {clips.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 pointer-events-none bg-slate-950/80 backdrop-blur-xs">
-            <Tv className="w-12 h-12 text-slate-600 animate-pulse" />
-            <h4 className="text-sm font-bold text-slate-300">
-              No Story Media Loaded
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-2 pointer-events-none bg-black/75 backdrop-blur-xs">
+            <Tv className="w-10 h-10 text-slate-600 animate-pulse" />
+            <h4 className="text-xs font-bold text-slate-300">
+              DaVinci Monitor Idle
             </h4>
-            <p className="text-xs text-slate-500 max-w-xs">
-              Upload voiceover narration and drop image/clip folders, then click &quot;Build Timeline&quot; to preview.
+            <p className="text-[10px] text-slate-500 max-w-xs">
+              Load voiceover audio & drop image folders, then click &quot;Build Timeline&quot;.
             </p>
           </div>
         )}
       </div>
 
-      {/* Filmora-Style Playback & Status Bar */}
-      <div className="flex items-center justify-between px-2 pt-1 gap-2 flex-wrap">
-        <div className="flex items-center space-x-3">
-          {/* Big Play / Pause Button */}
+      {/* DaVinci Resolve Viewer Transport Controls */}
+      <div className="bg-[#121215] border-t border-[#2b2b36] px-3 py-2 flex items-center justify-between text-xs flex-wrap gap-2">
+        {/* Left: Single Aspect Ratio Layering Button (Cycles 16:9 -> 9:16 -> 1:1 -> 16:9) */}
+        <button
+          onClick={handleCycleAspectRatio}
+          className="px-2.5 py-1 rounded bg-[#1c1c24] border border-[#2b2b36] hover:border-red-500 text-slate-200 text-[10px] font-mono font-bold flex items-center space-x-1.5 transition-colors group cursor-pointer"
+          title="Click to cycle ratio: 16:9 → 9:16 → 1:1"
+        >
+          <span className="w-2 h-2 rounded-full bg-red-500" />
+          <span className="text-white font-bold">{aspectRatio}</span>
+          <span className="text-[9px] text-slate-500 group-hover:text-slate-300">↻</span>
+        </button>
+
+        {/* Center: DaVinci Transport Buttons */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => onSeek(0)}
+            className="p-1.5 rounded bg-[#1c1c24] border border-[#2b2b36] text-slate-400 hover:text-white transition-colors"
+            title="Rewind to Start"
+          >
+            <SkipBack className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => onSeek(Math.max(0, currentTimeSec - 5))}
+            className="p-1.5 rounded bg-[#1c1c24] border border-[#2b2b36] text-slate-400 hover:text-white transition-colors"
+            title="Step Back 5s"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Main Play/Pause Button */}
           <button
             onClick={onTogglePlay}
             disabled={clips.length === 0}
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
               clips.length > 0
-                ? "bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-lg shadow-amber-500/30 cursor-pointer transform hover:scale-105 active:scale-95"
-                : "bg-slate-800 text-slate-600 cursor-not-allowed"
+                ? "bg-red-600 hover:bg-red-500 text-white font-bold shadow-md shadow-red-600/30 cursor-pointer transform hover:scale-105 active:scale-95"
+                : "bg-[#1c1c24] text-slate-600 cursor-not-allowed"
             }`}
             title={isPlaying ? "Pause (Space)" : "Play (Space)"}
           >
             {isPlaying ? (
-              <Pause className="w-5 h-5 fill-slate-950" />
+              <Pause className="w-4 h-4 fill-white" />
             ) : (
-              <Play className="w-5 h-5 fill-slate-950 translate-x-0.5" />
+              <Play className="w-4 h-4 fill-white translate-x-0.5" />
             )}
           </button>
 
-          {/* Timecode Readout */}
-          <div className="font-mono text-xs sm:text-sm font-bold flex items-center space-x-1.5 pl-1">
-            <span className="text-amber-400">
-              {formatSecondsToTimecode(currentTimeSec)}
-            </span>
-            <span className="text-slate-600">/</span>
-            <span className="text-slate-300">
-              {formatSecondsToTimecode(totalDurationSec)}
-            </span>
-          </div>
+          <button
+            onClick={() =>
+              onSeek(Math.min(totalDurationSec, currentTimeSec + 5))
+            }
+            className="p-1.5 rounded bg-[#1c1c24] border border-[#2b2b36] text-slate-400 hover:text-white transition-colors"
+            title="Step Forward 5s"
+          >
+            <RotateCw className="w-3.5 h-3.5" />
+          </button>
 
-          {/* Skip / Replay Controls */}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => onSeek(Math.max(0, currentTimeSec - 5))}
-              className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700 transition-colors text-xs"
-              title="Rewind 5s"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() =>
-                onSeek(Math.min(totalDurationSec, currentTimeSec + 5))
-              }
-              className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700 transition-colors text-xs"
-              title="Forward 5s"
-            >
-              <RotateCw className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <button
+            onClick={() => onSeek(totalDurationSec)}
+            className="p-1.5 rounded bg-[#1c1c24] border border-[#2b2b36] text-slate-400 hover:text-white transition-colors"
+            title="Fast Forward to End"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        {/* Right Status Badge: NOW image X / Total */}
+        {/* Right: NOW Image Indicator */}
         {clips.length > 0 && (
-          <div className="px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center space-x-2 text-xs">
-            <span className="text-slate-500 font-mono text-[10px] uppercase tracking-wider font-bold">
-              NOW
-            </span>
-            <span className="text-slate-200 font-bold font-mono">
-              image {currentClipNumber} / {clips.length}
-            </span>
+          <div className="px-2 py-1 rounded bg-[#1c1c24] border border-[#2b2b36] text-[10px] font-mono font-bold text-slate-300">
+            Clip {currentClipNumber} / {clips.length}
           </div>
         )}
       </div>

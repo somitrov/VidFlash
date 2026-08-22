@@ -8,7 +8,9 @@ import {
 
 /**
  * High-performance, clean-room 60FPS Video Canvas Compositor
- * Supports Ken Burns Pan/Zoom, Multi-Transitions, Dynamic Subtitles, Scene Fades, and Geometric Overlays.
+ * Supports Ken Burns Pan/Zoom, Multi-Transitions, Dynamic Subtitles, Scene Fades,
+ * Old Film Grain, Old Cinema Projector Particles, Geometric Tech Grid, Black & White Noir,
+ * VHS Scanlines, Cinemascope Letterbox, and Optical Overlays.
  */
 
 export function renderCompositorFrame({
@@ -24,6 +26,14 @@ export function renderCompositorFrame({
   fadeOutSec = 0.6,
   enableParticles = false,
   enableGlow = false,
+  enableFilmGrain = false,
+  enableOldCinema = false,
+  enableGeometricGrid = false,
+  enableBlackAndWhite = false,
+  enableVhsScanlines = false,
+  enableLetterbox = false,
+  enablePrismGlow = false,
+  enableVintageSepia = false,
 }: {
   ctx: CanvasRenderingContext2D;
   width: number;
@@ -37,11 +47,27 @@ export function renderCompositorFrame({
   fadeOutSec?: number;
   enableParticles?: boolean;
   enableGlow?: boolean;
+  enableFilmGrain?: boolean;
+  enableOldCinema?: boolean;
+  enableGeometricGrid?: boolean;
+  enableBlackAndWhite?: boolean;
+  enableVhsScanlines?: boolean;
+  enableLetterbox?: boolean;
+  enablePrismGlow?: boolean;
+  enableVintageSepia?: boolean;
 }) {
   // 1. Base dark stage
   ctx.save();
   ctx.fillStyle = "#020617";
   ctx.fillRect(0, 0, width, height);
+
+  // Setup color filters for media render
+  let baseFilter = "none";
+  if (enableBlackAndWhite) {
+    baseFilter = "grayscale(100%) contrast(120%) brightness(105%)";
+  } else if (enableVintageSepia) {
+    baseFilter = "sepia(75%) contrast(110%) brightness(95%)";
+  }
 
   // 2. Active Clip & Transition Evaluation
   const activeClipIndex = clips.findIndex(
@@ -71,7 +97,10 @@ export function renderCompositorFrame({
 
     if (isTransitioning && nextClip) {
       const transDuration = Math.max(0.1, nextClip.transitionDuration || 0.6);
-      const transProgress = Math.max(0, Math.min(1, 1 - timeRemaining / transDuration));
+      const transProgress = Math.max(
+        0,
+        Math.min(1, 1 - timeRemaining / transDuration)
+      );
 
       const incomingProgress = Math.max(
         0,
@@ -92,12 +121,21 @@ export function renderCompositorFrame({
         transProgress,
         nextClip.transition,
         width,
-        height
+        height,
+        baseFilter
       );
     } else {
       // Normal single clip rendering with Ken Burns
       ctx.save();
-      renderSingleClip(ctx, currentClip, clipProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        currentClip,
+        clipProgress,
+        width,
+        height,
+        1.0,
+        baseFilter
+      );
       ctx.restore();
     }
   } else if (clips.length > 0) {
@@ -105,35 +143,62 @@ export function renderCompositorFrame({
     const fallbackClip =
       currentTimeSec <= 0 ? clips[0] : clips[clips.length - 1];
     ctx.save();
-    renderSingleClip(ctx, fallbackClip, 1.0, width, height, 1.0);
-    ctx.restore();
-  }
-
-  // 3. Ambient Glow / Vignette (Optional)
-  if (enableGlow) {
-    ctx.save();
-    const radial = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      width * 0.2,
-      width / 2,
-      height / 2,
-      width * 0.75
+    renderSingleClip(
+      ctx,
+      fallbackClip,
+      1.0,
+      width,
+      height,
+      1.0,
+      baseFilter
     );
-    radial.addColorStop(0, "rgba(99, 102, 241, 0.04)");
-    radial.addColorStop(0.7, "rgba(0, 0, 0, 0.25)");
-    radial.addColorStop(1, "rgba(0, 0, 0, 0.7)");
-    ctx.fillStyle = radial;
-    ctx.fillRect(0, 0, width, height);
     ctx.restore();
   }
 
-  // 4. Floating Geometric Particles (Optional)
+  // Reset filter for procedural overlays
+  ctx.filter = "none";
+
+  // 3. Prism / Dreamy Optical Glow Overlay (Optional)
+  if (enablePrismGlow) {
+    renderPrismGlow(ctx, width, height, currentTimeSec);
+  }
+
+  // 4. Ambient Vignette Overlay (Optional)
+  if (enableGlow) {
+    renderAmbientVignette(ctx, width, height);
+  }
+
+  // 5. Floating Golden Particles (Optional)
   if (enableParticles) {
     renderFloatingParticles(ctx, width, height, currentTimeSec);
   }
 
-  // 5. Scene Opening & Ending Fades
+  // 6. Old Cinema Projector Particles & Light Flicker Overlay (Optional)
+  if (enableOldCinema) {
+    renderOldCinema(ctx, width, height, currentTimeSec);
+  }
+
+  // 7. Old Film Grain & Scratches Overlay (Optional)
+  if (enableFilmGrain) {
+    renderFilmGrain(ctx, width, height, currentTimeSec);
+  }
+
+  // 8. Geometric Tech Grid & HUD Overlay (Optional)
+  if (enableGeometricGrid) {
+    renderGeometricGrid(ctx, width, height, currentTimeSec);
+  }
+
+  // 9. VHS Retro Glitch & CRT Scanlines Overlay (Optional)
+  if (enableVhsScanlines) {
+    renderVhsScanlines(ctx, width, height, currentTimeSec);
+  }
+
+  // 10. Cinemascope 2.39:1 Letterbox Bars Overlay (Optional)
+  if (enableLetterbox) {
+    renderLetterbox(ctx, width, height);
+  }
+
+  // 11. Scene Opening & Ending Fades
   if (fadeInSec > 0 && currentTimeSec < fadeInSec) {
     const fadeProgress = 1 - currentTimeSec / fadeInSec;
     ctx.save();
@@ -142,16 +207,19 @@ export function renderCompositorFrame({
     ctx.restore();
   }
 
-  const effectiveTotal = totalDurationSec || (clips.length > 0 ? clips[clips.length - 1].endSec : 10);
+  const effectiveTotal =
+    totalDurationSec ||
+    (clips.length > 0 ? clips[clips.length - 1].endSec : 10);
   if (fadeOutSec > 0 && currentTimeSec > effectiveTotal - fadeOutSec) {
-    const fadeOutProgress = (currentTimeSec - (effectiveTotal - fadeOutSec)) / fadeOutSec;
+    const fadeOutProgress =
+      (currentTimeSec - (effectiveTotal - fadeOutSec)) / fadeOutSec;
     ctx.save();
     ctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0, Math.min(1, fadeOutProgress))})`;
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
   }
 
-  // 6. Subtitles & Captions Overlay
+  // 12. Subtitles & Captions Overlay
   renderSubtitles(ctx, width, height, currentTimeSec, subtitles, subtitleStyle);
 
   ctx.restore();
@@ -169,16 +237,35 @@ function renderTransitionComposite(
   t: number, // 0.0 -> 1.0
   transition: TransitionEffect,
   width: number,
-  height: number
+  height: number,
+  filterStr: string = "none"
 ) {
+  const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
   switch (transition) {
     case "crossfade": {
       ctx.save();
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
 
       ctx.save();
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, t);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
       ctx.restore();
       break;
     }
@@ -187,10 +274,26 @@ function renderTransitionComposite(
       ctx.save();
       if (t < 0.5) {
         const outAlpha = 1 - t * 2;
-        renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, outAlpha);
+        renderSingleClip(
+          ctx,
+          outgoingClip,
+          outgoingProgress,
+          width,
+          height,
+          outAlpha,
+          filterStr
+        );
       } else {
         const inAlpha = (t - 0.5) * 2;
-        renderSingleClip(ctx, incomingClip, incomingProgress, width, height, inAlpha);
+        renderSingleClip(
+          ctx,
+          incomingClip,
+          incomingProgress,
+          width,
+          height,
+          inAlpha,
+          filterStr
+        );
       }
       ctx.restore();
       break;
@@ -199,11 +302,27 @@ function renderTransitionComposite(
     case "flash-white": {
       ctx.save();
       if (t < 0.5) {
-        renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
+        renderSingleClip(
+          ctx,
+          outgoingClip,
+          outgoingProgress,
+          width,
+          height,
+          1.0,
+          filterStr
+        );
         ctx.fillStyle = `rgba(255, 255, 255, ${t * 2})`;
         ctx.fillRect(0, 0, width, height);
       } else {
-        renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+        renderSingleClip(
+          ctx,
+          incomingClip,
+          incomingProgress,
+          width,
+          height,
+          1.0,
+          filterStr
+        );
         ctx.fillStyle = `rgba(255, 255, 255, ${(1 - t) * 2})`;
         ctx.fillRect(0, 0, width, height);
       }
@@ -211,24 +330,378 @@ function renderTransitionComposite(
       break;
     }
 
-    case "wipe-left": {
+    case "light-leak": {
       ctx.save();
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
-      ctx.beginPath();
-      ctx.rect(width * (1 - t), 0, width * t, height);
-      ctx.clip();
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      const leakIntensity = Math.sin(t * Math.PI);
+
+      const leakX = width * (1.2 - t * 1.4);
+      const leakY = height * (t * 0.8);
+      const leakGrad = ctx.createRadialGradient(
+        leakX,
+        leakY,
+        10,
+        leakX,
+        leakY,
+        width * 0.9
+      );
+      leakGrad.addColorStop(0, `rgba(255, 200, 100, ${leakIntensity * 0.9})`);
+      leakGrad.addColorStop(0.3, `rgba(255, 80, 120, ${leakIntensity * 0.7})`);
+      leakGrad.addColorStop(0.6, `rgba(160, 40, 255, ${leakIntensity * 0.4})`);
+      leakGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+      ctx.fillStyle = leakGrad;
+      ctx.fillRect(0, 0, width, height);
       ctx.restore();
       break;
     }
 
-    case "wipe-right": {
+    case "glow-flash": {
       ctx.save();
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
-      ctx.beginPath();
-      ctx.rect(0, 0, width * t, height);
-      ctx.clip();
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const bloomIntensity = Math.sin(t * Math.PI);
+      const bloomGrad = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        0,
+        width / 2,
+        height / 2,
+        width * 0.75
+      );
+      bloomGrad.addColorStop(0, `rgba(255, 255, 240, ${bloomIntensity * 0.95})`);
+      bloomGrad.addColorStop(0.4, `rgba(255, 200, 120, ${bloomIntensity * 0.6})`);
+      bloomGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = bloomGrad;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+      break;
+    }
+
+    case "zoom-in": {
+      ctx.save();
+      const outScale = 1.0 + ease * 0.9;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(outScale, outScale);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0 - t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      const inScale = 0.4 + ease * 0.6;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(inScale, inScale);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "zoom-out": {
+      ctx.save();
+      const outScale = 1.0 - ease * 0.6;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(Math.max(0.1, outScale), Math.max(0.1, outScale));
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0 - t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      const inScale = 2.0 - ease * 1.0;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(inScale, inScale);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "zoom-blur": {
+      ctx.save();
+      const blurScale = 1.0 + ease * 1.2;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(blurScale, blurScale);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0 - t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      const inScale = 0.5 + ease * 0.5;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(inScale, inScale);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "glitch": {
+      const glitchJitter = Math.sin(t * Math.PI * 8) * 18;
+      const sliceCount = 8;
+      const sliceHeight = height / sliceCount;
+
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        t < 0.5 ? outgoingClip : incomingClip,
+        t < 0.5 ? outgoingProgress : incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+
+      ctx.globalCompositeOperation = "screen";
+      ctx.save();
+      ctx.translate(glitchJitter, 0);
+      ctx.fillStyle = "rgba(255, 0, 80, 0.25)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(-glitchJitter, 0);
+      ctx.fillStyle = "rgba(0, 220, 255, 0.25)";
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+      for (let s = 0; s < sliceCount; s += 2) {
+        ctx.fillRect(0, s * sliceHeight, width, sliceHeight * 0.5);
+      }
+      ctx.restore();
+      break;
+    }
+
+    case "stretch-glow": {
+      ctx.save();
+      const stretchX = 1.0 + Math.sin(t * Math.PI) * 1.5;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(stretchX, 1.0);
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        t < 0.5 ? outgoingClip : incomingClip,
+        t < 0.5 ? outgoingProgress : incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "whip-pan-left": {
+      const offset = ease * width;
+      ctx.save();
+      ctx.translate(-offset, 0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(width - offset, 0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "whip-pan-right": {
+      const offset = ease * width;
+      ctx.save();
+      ctx.translate(offset, 0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(-width + offset, 0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "whip-pan-up": {
+      const offset = ease * height;
+      ctx.save();
+      ctx.translate(0, -offset);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(0, height - offset);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "whip-pan-down": {
+      const offset = ease * height;
+      ctx.save();
+      ctx.translate(0, -offset);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(0, -height + offset);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
       break;
     }
@@ -236,12 +709,28 @@ function renderTransitionComposite(
     case "slide-left": {
       ctx.save();
       ctx.translate(-t * width, 0);
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
 
       ctx.save();
       ctx.translate((1 - t) * width, 0);
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
       break;
     }
@@ -249,34 +738,163 @@ function renderTransitionComposite(
     case "slide-right": {
       ctx.save();
       ctx.translate(t * width, 0);
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
 
       ctx.save();
       ctx.translate(-(1 - t) * width, 0);
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
       break;
     }
 
-    case "zoom-in":
     case "circle-open": {
       ctx.save();
-      renderSingleClip(ctx, outgoingClip, outgoingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
 
       ctx.save();
-      const maxRadius = Math.sqrt(width * width + height * height) * 0.6;
+      const maxRadius = Math.sqrt(width * width + height * height) * 0.65;
       ctx.beginPath();
-      ctx.arc(width / 2, height / 2, maxRadius * t, 0, Math.PI * 2);
+      ctx.arc(width / 2, height / 2, maxRadius * ease, 0, Math.PI * 2);
       ctx.clip();
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "spin-360": {
+      const angle = ease * Math.PI * 2;
+      ctx.save();
+      ctx.translate(width / 2, height / 2);
+      ctx.rotate(angle);
+      ctx.scale(Math.max(0.01, 1 - ease), Math.max(0.01, 1 - ease));
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0 - t,
+        filterStr
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(width / 2, height / 2);
+      ctx.rotate(angle);
+      ctx.scale(Math.max(0.01, ease), Math.max(0.01, ease));
+      ctx.translate(-width / 2, -height / 2);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        t,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "wipe-left": {
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.beginPath();
+      ctx.rect(width * (1 - t), 0, width * t, height);
+      ctx.clip();
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.restore();
+      break;
+    }
+
+    case "wipe-right": {
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        outgoingClip,
+        outgoingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
+      ctx.beginPath();
+      ctx.rect(0, 0, width * t, height);
+      ctx.clip();
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       ctx.restore();
       break;
     }
 
     default: {
-      renderSingleClip(ctx, incomingClip, incomingProgress, width, height, 1.0);
+      renderSingleClip(
+        ctx,
+        incomingClip,
+        incomingProgress,
+        width,
+        height,
+        1.0,
+        filterStr
+      );
       break;
     }
   }
@@ -291,10 +909,14 @@ function renderSingleClip(
   progress: number,
   canvasWidth: number,
   canvasHeight: number,
-  alpha: number = 1.0
+  alpha: number = 1.0,
+  filterStr: string = "none"
 ) {
   if (alpha <= 0.001) return;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  if (filterStr && filterStr !== "none") {
+    ctx.filter = filterStr;
+  }
 
   const mediaSource =
     clip.fileType === "video" ? clip.videoElement : clip.imageElement;
@@ -309,20 +931,13 @@ function renderSingleClip(
       ? clip.videoElement?.videoHeight || 1080
       : clip.imageElement?.naturalHeight || 1080;
 
-  // Aspect fill / cover math
-  const scaleRatio = Math.max(
-    canvasWidth / srcWidth,
-    canvasHeight / srcHeight
-  );
-
+  const scaleRatio = Math.max(canvasWidth / srcWidth, canvasHeight / srcHeight);
   const baseWidth = srcWidth * scaleRatio;
   const baseHeight = srcHeight * scaleRatio;
 
-  // Ken Burns Motion Matrices
   let scaleMultiplier = 1.0;
   let offsetX = 0;
   let offsetY = 0;
-
   const easeProgress = easeInOutQuad(progress);
 
   switch (clip.motion) {
@@ -334,7 +949,7 @@ function renderSingleClip(
       break;
     case "pan-left":
       scaleMultiplier = 1.08;
-      offsetX = (canvasWidth * 0.05) * (1 - easeProgress * 2);
+      offsetX = canvasWidth * 0.05 * (1 - easeProgress * 2);
       break;
     case "pan-right":
       scaleMultiplier = 1.08;
@@ -358,7 +973,316 @@ function renderSingleClip(
 }
 
 /**
- * Renders glowing floating particles
+ * 1. Old Film Grain & Vintage Dust / Scratches
+ */
+function renderFilmGrain(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+  const frameId = Math.floor(timeSec * 24);
+
+  // Dynamic High-Density Film Grain Noise
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  const grainCount = 350;
+  for (let i = 0; i < grainCount; i++) {
+    const gx =
+      ((Math.sin(frameId * 17.13 + i * 93.71) * 43758.5453) % 1) * width;
+    const gy =
+      ((Math.cos(frameId * 31.37 + i * 47.93) * 23421.6312) % 1) * height;
+    ctx.fillRect(Math.abs(gx), Math.abs(gy), 2, 2);
+  }
+
+  // Dynamic Dark Grain
+  ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+  for (let i = 0; i < 200; i++) {
+    const gx =
+      ((Math.sin(frameId * 53.11 + i * 29.17) * 12345.6789) % 1) * width;
+    const gy =
+      ((Math.cos(frameId * 19.87 + i * 67.23) * 98765.4321) % 1) * height;
+    ctx.fillRect(Math.abs(gx), Math.abs(gy), 1.5, 1.5);
+  }
+
+  // Vintage Vertical Hair / Scratch Lines
+  if (frameId % 2 === 0) {
+    const scratchX = (Math.abs(Math.sin(frameId * 103.7)) * width) % width;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(scratchX, 0);
+    ctx.lineTo(scratchX + (Math.sin(frameId) - 0.5) * 8, height);
+    ctx.stroke();
+  }
+
+  if (frameId % 5 === 0) {
+    const scratch2X = (Math.abs(Math.cos(frameId * 77.3)) * width) % width;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(scratch2X, 0);
+    ctx.lineTo(scratch2X + 4, height);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * 2. Old Cinema Projector Particles & Beam Flicker
+ */
+function renderOldCinema(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+  const frameId = Math.floor(timeSec * 24);
+
+  // 1920s Projector Beam Light Flicker Pulse
+  const flicker = 0.04 + Math.sin(timeSec * 36) * 0.03 + (Math.random() - 0.5) * 0.02;
+  ctx.fillStyle = `rgba(255, 245, 220, ${flicker})`;
+  ctx.fillRect(0, 0, width, height);
+
+  // Projector Dust Motes & Film Particles
+  const particleCount = 45;
+  for (let i = 0; i < particleCount; i++) {
+    const seed = i * 43.17;
+    const speed = 0.2 + (i % 6) * 0.1;
+    const px = ((Math.sin(seed + timeSec * speed) * 0.5 + 0.5) * width) % width;
+    const py =
+      ((Math.cos(seed * 1.7 + timeSec * speed * 0.9) * 0.5 + 0.5) * height) %
+      height;
+    const size = 1.5 + (i % 5) * 2;
+    const opacity = 0.2 + Math.sin(timeSec * 3 + i) * 0.15;
+
+    ctx.fillStyle = `rgba(255, 230, 160, ${opacity})`;
+    ctx.beginPath();
+    ctx.arc(px, py, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Film Sprocket Border Vibration
+  ctx.fillStyle = "rgba(120, 90, 40, 0.06)";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.restore();
+}
+
+/**
+ * 3. Modern Geometric Tech Grid & HUD Viewfinder
+ */
+function renderGeometricGrid(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+  const pad = Math.round(width * 0.04);
+  const bracketLen = Math.round(width * 0.05);
+
+  ctx.strokeStyle = "rgba(99, 102, 241, 0.75)";
+  ctx.lineWidth = 2.5;
+
+  // 4 Corner HUD Framing Brackets
+  // Top-Left ┌
+  ctx.beginPath();
+  ctx.moveTo(pad, pad + bracketLen);
+  ctx.lineTo(pad, pad);
+  ctx.lineTo(pad + bracketLen, pad);
+  ctx.stroke();
+
+  // Top-Right ┐
+  ctx.beginPath();
+  ctx.moveTo(width - pad - bracketLen, pad);
+  ctx.lineTo(width - pad, pad);
+  ctx.lineTo(width - pad, pad + bracketLen);
+  ctx.stroke();
+
+  // Bottom-Left └
+  ctx.beginPath();
+  ctx.moveTo(pad, height - pad - bracketLen);
+  ctx.lineTo(pad, height - pad);
+  ctx.lineTo(pad + bracketLen, height - pad);
+  ctx.stroke();
+
+  // Bottom-Right ┘
+  ctx.beginPath();
+  ctx.moveTo(width - pad - bracketLen, height - pad);
+  ctx.lineTo(width - pad, height - pad);
+  ctx.lineTo(width - pad, height - pad - bracketLen);
+  ctx.stroke();
+
+  // Center Viewfinder Circular Reticle ◎
+  const cx = width / 2;
+  const cy = height / 2;
+  const reticleRadius = Math.round(width * 0.035);
+
+  ctx.strokeStyle = "rgba(56, 189, 248, 0.65)";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, reticleRadius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Crosshairs +
+  const crossSize = reticleRadius * 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - crossSize, cy);
+  ctx.lineTo(cx - reticleRadius * 0.4, cy);
+  ctx.moveTo(cx + reticleRadius * 0.4, cy);
+  ctx.lineTo(cx + crossSize, cy);
+  ctx.moveTo(cx, cy - crossSize);
+  ctx.lineTo(cx, cy - reticleRadius * 0.4);
+  ctx.moveTo(cx, cy + reticleRadius * 0.4);
+  ctx.lineTo(cx, cy + crossSize);
+  ctx.stroke();
+
+  // Rule of thirds technical grid lines
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(width / 3, 0);
+  ctx.lineTo(width / 3, height);
+  ctx.moveTo((width * 2) / 3, 0);
+  ctx.lineTo((width * 2) / 3, height);
+  ctx.moveTo(0, height / 3);
+  ctx.lineTo(width, height / 3);
+  ctx.moveTo(0, (height * 2) / 3);
+  ctx.lineTo(width, (height * 2) / 3);
+  ctx.stroke();
+
+  // HUD Tech Coordinates
+  ctx.fillStyle = "rgba(129, 140, 248, 0.9)";
+  ctx.font = "bold 11px monospace";
+  ctx.fillText(
+    `[GEO-GRID 60FPS]  TC:${timeSec.toFixed(2)}s  FOCAL:AUTO`,
+    pad + 8,
+    pad + 18
+  );
+
+  ctx.restore();
+}
+
+/**
+ * 4. VHS Retro Glitch & CRT Scanlines
+ */
+function renderVhsScanlines(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+
+  // Horizontal CRT scanlines
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+  for (let y = 0; y < height; y += 4) {
+    ctx.fillRect(0, y, width, 1.8);
+  }
+
+  // Bottom Tracking Jitter Band
+  const trackingY = ((timeSec * 70) % height) * 0.95;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  ctx.fillRect(0, trackingY, width, 18);
+
+  // Retro REC OSD Text
+  const isBlinkOn = Math.floor(timeSec * 2) % 2 === 0;
+  if (isBlinkOn) {
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.arc(45, 45, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 13px 'Courier New', monospace";
+    ctx.fillText("REC", 60, 49);
+  }
+
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = "bold 12px 'Courier New', monospace";
+  ctx.fillText("PLAY ▶  SP", width - 120, 48);
+
+  ctx.restore();
+}
+
+/**
+ * 5. Cinemascope 2.39:1 Letterbox Black Bars
+ */
+function renderLetterbox(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
+  ctx.save();
+  const barHeight = Math.round(height * 0.12);
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, width, barHeight);
+  ctx.fillRect(0, height - barHeight, width, barHeight);
+  ctx.restore();
+}
+
+/**
+ * 6. Prism / Dreamy Optical Glow
+ */
+function renderPrismGlow(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  const glowX = width * (0.3 + Math.sin(timeSec * 0.5) * 0.2);
+  const glowY = height * (0.3 + Math.cos(timeSec * 0.4) * 0.2);
+
+  const prismGrad = ctx.createRadialGradient(
+    glowX,
+    glowY,
+    10,
+    glowX,
+    glowY,
+    width * 0.7
+  );
+  prismGrad.addColorStop(0, "rgba(255, 220, 180, 0.4)");
+  prismGrad.addColorStop(0.5, "rgba(180, 100, 255, 0.2)");
+  prismGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+  ctx.fillStyle = prismGrad;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+}
+
+/**
+ * 7. Ambient Dark Vignette
+ */
+function renderAmbientVignette(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number
+) {
+  ctx.save();
+  const radial = ctx.createRadialGradient(
+    width / 2,
+    height / 2,
+    width * 0.2,
+    width / 2,
+    height / 2,
+    width * 0.75
+  );
+  radial.addColorStop(0, "rgba(0, 0, 0, 0)");
+  radial.addColorStop(0.65, "rgba(0, 0, 0, 0.35)");
+  radial.addColorStop(1, "rgba(0, 0, 0, 0.85)");
+  ctx.fillStyle = radial;
+  ctx.fillRect(0, 0, width, height);
+  ctx.restore();
+}
+
+/**
+ * 8. Glowing Floating Particles
  */
 function renderFloatingParticles(
   ctx: CanvasRenderingContext2D,
@@ -367,17 +1291,22 @@ function renderFloatingParticles(
   timeSec: number
 ) {
   ctx.save();
-  const particleCount = 20;
+  const particleCount = 28;
 
   for (let i = 0; i < particleCount; i++) {
     const seed = i * 137.5;
-    const speed = 0.3 + (i % 5) * 0.15;
+    const speed = 0.25 + (i % 5) * 0.15;
     const x = ((Math.sin(seed + timeSec * speed) * 0.5 + 0.5) * width) % width;
-    const y = ((Math.cos(seed * 1.3 + timeSec * speed * 0.8) * 0.5 + 0.5) * height) % height;
+    const y =
+      ((Math.cos(seed * 1.3 + timeSec * speed * 0.8) * 0.5 + 0.5) * height) %
+      height;
     const size = 2 + (i % 4) * 2.5;
-    const opacity = 0.15 + Math.sin(timeSec * 2 + i) * 0.1;
+    const opacity = 0.22 + Math.sin(timeSec * 2 + i) * 0.15;
 
-    ctx.fillStyle = i % 2 === 0 ? `rgba(168, 85, 247, ${opacity})` : `rgba(56, 189, 248, ${opacity})`;
+    ctx.fillStyle =
+      i % 2 === 0
+        ? `rgba(251, 191, 36, ${opacity})`
+        : `rgba(244, 114, 182, ${opacity})`;
     ctx.beginPath();
     ctx.arc(x, y, size, 0, Math.PI * 2);
     ctx.fill();
@@ -412,7 +1341,6 @@ function renderSubtitles(
 
   const lines = wrapText(ctx, activeCue.text, width * 0.85);
   const lineHeight = scaledFontSize * 1.35;
-  const totalTextHeight = lines.length * lineHeight;
 
   let startY = height * 0.82;
   if (style.position === "top") startY = height * 0.15;
@@ -421,7 +1349,6 @@ function renderSubtitles(
   lines.forEach((line, index) => {
     const y = startY + (index - (lines.length - 1) / 2) * lineHeight;
 
-    // Optional Background Pill
     if (style.showBackground) {
       const textMetrics = ctx.measureText(line);
       const paddingX = scaledFontSize * 0.45;
@@ -439,7 +1366,6 @@ function renderSubtitles(
       ctx.fill();
     }
 
-    // Text Outline / Stroke
     if (style.strokeWidth > 0) {
       ctx.strokeStyle = style.strokeColor || "#000000";
       ctx.lineWidth = style.strokeWidth * scale * 2;
@@ -447,7 +1373,6 @@ function renderSubtitles(
       ctx.strokeText(line, width / 2, y);
     }
 
-    // Text Fill
     ctx.fillStyle = style.color || "#ffffff";
     ctx.fillText(line, width / 2, y);
   });

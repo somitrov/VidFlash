@@ -35,17 +35,29 @@ import {
 } from "@/lib/engine/timelineBuilder";
 import { sortClipsByTimestamp } from "@/lib/engine/timestampParser";
 import { exportVideoClientSide } from "@/lib/engine/videoExporter";
-import { playSynthesizedSfx } from "@/lib/engine/sfxEngine";
+import { playAudioSfx } from "@/lib/engine/sfxEngine";
 
 const ALL_TRANSITIONS: TransitionEffect[] = [
   "crossfade",
-  "fade-to-black",
-  "wipe-left",
-  "wipe-right",
+  "light-leak",
+  "glow-flash",
+  "zoom-in",
+  "zoom-out",
+  "zoom-blur",
+  "glitch",
+  "stretch-glow",
+  "spin-360",
+  "whip-pan-left",
+  "whip-pan-right",
+  "whip-pan-up",
+  "whip-pan-down",
   "slide-left",
   "slide-right",
   "circle-open",
   "flash-white",
+  "fade-to-black",
+  "wipe-left",
+  "wipe-right",
 ];
 
 export function VidFlashAutoEditor() {
@@ -79,9 +91,20 @@ export function VidFlashAutoEditor() {
     randomTransitions: true,
     selectedTransition: "crossfade",
     fps: 30,
+    qualityPreset: "optimized",
+    hardwareProfile: "balanced",
     enableSfx: true,
+    selectedSfxId: "clean-fast-swoosh",
     enableParticles: false,
     enableGlow: false,
+    enableFilmGrain: false,
+    enableOldCinema: false,
+    enableGeometricGrid: false,
+    enableBlackAndWhite: false,
+    enableVhsScanlines: false,
+    enableLetterbox: false,
+    enablePrismGlow: false,
+    enableVintageSepia: false,
   });
 
   const [currentTimeSec, setCurrentTimeSec] = useState<number>(0);
@@ -104,7 +127,7 @@ export function VidFlashAutoEditor() {
     ? Math.max(...timelineClips.map((c) => c.endSec))
     : 10;
 
-  // Handle Audio Upload (Single or Multiple clips)
+  // Handle Audio Upload (Single or Multiple clips, all formats)
   const handleUploadAudio = async (files: File[]) => {
     try {
       const decoded = await decodeAudioFiles(files);
@@ -112,6 +135,7 @@ export function VidFlashAutoEditor() {
 
       if (audioElementRef.current) {
         audioElementRef.current.src = decoded.audioUrl || "";
+        audioElementRef.current.load();
       }
     } catch (err) {
       console.error("Failed to decode audio files:", err);
@@ -124,6 +148,7 @@ export function VidFlashAutoEditor() {
     }
     setAudioTrack(null);
     if (audioElementRef.current) {
+      audioElementRef.current.pause();
       audioElementRef.current.src = "";
     }
   };
@@ -209,25 +234,41 @@ export function VidFlashAutoEditor() {
   };
 
   // Playback Loop & Clock Sync
-  const handleTogglePlay = () => {
+  const handleTogglePlay = async () => {
     if (isPlaying) {
       setIsPlaying(false);
-      audioElementRef.current?.pause();
+      try {
+        audioElementRef.current?.pause();
+      } catch {}
     } else {
       if (currentTimeSec >= totalDurationSec) {
         setCurrentTimeSec(0);
         if (audioElementRef.current) audioElementRef.current.currentTime = 0;
       }
       setIsPlaying(true);
-      audioElementRef.current?.play();
+      if (audioElementRef.current && audioTrack?.audioUrl) {
+        try {
+          const playPromise = audioElementRef.current.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+          }
+        } catch (err: any) {
+          // Gracefully handle browser AbortError / play request interrupted by pause
+          if (err.name !== "AbortError") {
+            console.warn("Audio playback notice:", err);
+          }
+        }
+      }
     }
   };
 
   const handleSeek = (timeSec: number) => {
     const clamped = Math.max(0, Math.min(totalDurationSec, timeSec));
     setCurrentTimeSec(clamped);
-    if (audioElementRef.current) {
-      audioElementRef.current.currentTime = clamped;
+    if (audioElementRef.current && isFinite(audioElementRef.current.duration)) {
+      try {
+        audioElementRef.current.currentTime = clamped;
+      } catch {}
     }
   };
 
@@ -247,7 +288,7 @@ export function VidFlashAutoEditor() {
       setCurrentTimeSec((prev) => {
         const nextTime = prev + deltaSec;
 
-        // Sound Effect Trigger at Scene Cuts
+        // Sound Effect Trigger at Scene Cuts (Default: Fast Swoosh)
         if (studioSettings.enableSfx && timelineClips.length > 0) {
           const activeIndex = timelineClips.findIndex(
             (c) => nextTime >= c.startSec && nextTime < c.endSec
@@ -257,13 +298,15 @@ export function VidFlashAutoEditor() {
             activeIndex !== lastCrossedClipIndexRef.current
           ) {
             lastCrossedClipIndexRef.current = activeIndex;
-            playSynthesizedSfx("whoosh");
+            playAudioSfx(studioSettings.selectedSfxId || "clean-fast-swoosh");
           }
         }
 
         if (nextTime >= totalDurationSec) {
           setIsPlaying(false);
-          audioElementRef.current?.pause();
+          try {
+            audioElementRef.current?.pause();
+          } catch {}
           return totalDurationSec;
         }
         return nextTime;
@@ -296,12 +339,45 @@ export function VidFlashAutoEditor() {
     );
   };
 
+  // Interactive Clip Boundary Sliding / Hold Duration Adjustment
+  const handleResizeClipBoundary = (clipIndex: number, newCutSec: number) => {
+    setTimelineClips((prev) => {
+      if (clipIndex < 0 || clipIndex >= prev.length - 1) return prev;
+      const updated = [...prev];
+      const leftClip = { ...updated[clipIndex] };
+      const rightClip = { ...updated[clipIndex + 1] };
+
+      const minDur = 0.3;
+      const clamped = Math.max(
+        leftClip.startSec + minDur,
+        Math.min(rightClip.endSec - minDur, newCutSec)
+      );
+
+      leftClip.endSec = clamped;
+      leftClip.durationSec = Number(
+        (leftClip.endSec - leftClip.startSec).toFixed(2)
+      );
+
+      rightClip.startSec = clamped;
+      rightClip.durationSec = Number(
+        (rightClip.endSec - rightClip.startSec).toFixed(2)
+      );
+
+      updated[clipIndex] = leftClip;
+      updated[clipIndex + 1] = rightClip;
+      return updated;
+    });
+  };
+
   // Video Render Handler
   const handleStartRender = async () => {
     setIsExporting(true);
     setExportProgress(0);
     setExportError(null);
     setExportedBlobUrl(null);
+    if (typeof document !== "undefined") {
+      document.title = "VidFlash - 0% Rendered";
+    }
 
     try {
       const config: ExportConfig = {
@@ -309,10 +385,20 @@ export function VidFlashAutoEditor() {
         resolution,
         fps: studioSettings.fps,
         format: "mp4",
+        qualityPreset: studioSettings.qualityPreset || "optimized",
+        hardwareProfile: studioSettings.hardwareProfile || "balanced",
         fadeInSec: studioSettings.fadeInSec,
         fadeOutSec: studioSettings.fadeOutSec,
         enableParticles: studioSettings.enableParticles,
         enableGlow: studioSettings.enableGlow,
+        enableFilmGrain: studioSettings.enableFilmGrain,
+        enableOldCinema: studioSettings.enableOldCinema,
+        enableGeometricGrid: studioSettings.enableGeometricGrid,
+        enableBlackAndWhite: studioSettings.enableBlackAndWhite,
+        enableVhsScanlines: studioSettings.enableVhsScanlines,
+        enableLetterbox: studioSettings.enableLetterbox,
+        enablePrismGlow: studioSettings.enablePrismGlow,
+        enableVintageSepia: studioSettings.enableVintageSepia,
       };
 
       const blob = await exportVideoClientSide({
@@ -321,85 +407,58 @@ export function VidFlashAutoEditor() {
         subtitles,
         subtitleStyle,
         config,
-        onProgress: (percent) => setExportProgress(percent),
+        onProgress: (percent) => {
+          setExportProgress(percent);
+          if (typeof document !== "undefined") {
+            document.title = `VidFlash - ${percent}% Rendered`;
+          }
+        },
       });
 
       const url = URL.createObjectURL(blob);
       setExportedBlobUrl(url);
+      if (typeof document !== "undefined") {
+        document.title = "VidFlash - Render Complete! 🎉";
+      }
     } catch (err) {
       console.error("Export failed:", err);
       setExportError(err instanceof Error ? err.message : "Video export failed");
+      if (typeof document !== "undefined") {
+        document.title = "VidFlash - Video Productions on Flash!";
+      }
+    }
+  };
+
+  const handleCloseRenderModal = () => {
+    setIsExporting(false);
+    setExportedBlobUrl(null);
+    setExportError(null);
+    if (typeof document !== "undefined") {
+      document.title = "VidFlash - Video Productions on Flash!";
     }
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-6">
+    <div className="w-full max-w-[1920px] mx-auto px-1 sm:px-2 py-1 space-y-2.5">
       {/* Hidden Audio Element for synchronized playback */}
       <audio ref={audioElementRef} />
 
-      {/* AutoEditor Brand Header */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 backdrop-blur-md flex items-center justify-between flex-wrap gap-3 shadow-xl">
-        <div className="flex items-center space-x-3">
-          <div className="relative flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-md shadow-indigo-500/25 text-white font-bold ring-1 ring-indigo-500/30 shrink-0">
-            <svg
-              className="w-3.5 h-3.5 text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="m22 8-6 4 6 4V8Z" />
-              <rect width="14" height="12" x="2" y="6" rx="2" ry="2" />
-            </svg>
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
+      {/* Clean Studio Top Header Bar */}
+      <div className="bg-[#121215] border border-[#2b2b36] rounded-xl px-4 py-2 flex items-center justify-between flex-wrap gap-2 text-xs shadow-xl">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center text-white font-bold shadow-md shadow-indigo-600/30 shrink-0">
+            <Tv className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-base font-extrabold text-white">
-                VidFlash AutoEditor
-              </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold font-mono rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                v2.0
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              image + video · voiceover sync (100% Client-Side)
-            </p>
-          </div>
-        </div>
-
-        {/* Right Status Badges */}
-        <div className="flex items-center space-x-2">
-          {audioTrack && (
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200">
-              <Music className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="truncate max-w-[180px] font-mono text-[11px]">
-                {audioTrack.fileName}
-              </span>
-            </div>
-          )}
-
-          {rawClips.length > 0 && (
-            <div className="flex items-center space-x-1.5 px-3 py-1 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200">
-              <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
-              <span className="font-mono text-[11px] font-bold">
-                {rawClips.length} images
-              </span>
-            </div>
-          )}
+          <span className="font-extrabold text-white text-sm tracking-wide">
+            AutoEditor
+          </span>
         </div>
       </div>
 
-      {/* Main Studio Grid: Left Media & Timeline (8 cols) vs Right Control Sidebar (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Media Panel + Preview Player + Multi-Track Timeline */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Step 1 & 2 Media Ingestion Panel */}
+      {/* DaVinci Top 3-Pane Work Area: Media Pool (Left) | Viewer Monitor (Center) | Inspector (Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start">
+        {/* Left: Media Pool (Col Span 3) */}
+        <div className="lg:col-span-3 xl:col-span-3">
           <StudioMediaPanel
             audioTrack={audioTrack}
             clips={rawClips}
@@ -410,8 +469,10 @@ export function VidFlashAutoEditor() {
             onRemoveClip={handleRemoveClip}
             onClearAllClips={handleClearAllClips}
           />
+        </div>
 
-          {/* Live 60FPS Player Viewport */}
+        {/* Center: Viewer Monitor (Col Span 6) */}
+        <div className="lg:col-span-5 xl:col-span-6">
           <StudioPreview
             clips={timelineClips}
             subtitles={subtitles}
@@ -422,29 +483,16 @@ export function VidFlashAutoEditor() {
             isPlaying={isPlaying}
             aspectRatio={aspectRatio}
             resolution={resolution}
+            projectName={audioTrack ? audioTrack.fileName : "Auto-Sync Sequence"}
+            totalClipsCount={rawClips.length}
             onTogglePlay={handleTogglePlay}
             onSeek={handleSeek}
             onChangeAspectRatio={handleChangeAspectRatio}
           />
-
-          {/* Autonomous Multi-Track Timeline */}
-          <StudioTimeline
-            clips={timelineClips}
-            audioTrack={audioTrack}
-            subtitles={subtitles}
-            currentTimeSec={currentTimeSec}
-            totalDurationSec={totalDurationSec}
-            selectedClipId={selectedClipId}
-            onSelectClip={(id) => setSelectedClipId(id)}
-            onSeek={handleSeek}
-            onUpdateClipMotion={handleUpdateClipMotion}
-            onUpdateClipTransition={handleUpdateClipTransition}
-            onOpenTransitions={() => {}}
-          />
         </div>
 
-        {/* Right Column: Studio Control Sidebar (Export, Scene Fades, Transitions, Captions, SFX, Overlays) */}
-        <div className="lg:col-span-4">
+        {/* Right: Inspector Panel (Col Span 3) */}
+        <div className="lg:col-span-4 xl:col-span-3">
           <StudioControlSidebar
             clips={timelineClips}
             subtitles={subtitles}
@@ -466,6 +514,24 @@ export function VidFlashAutoEditor() {
         </div>
       </div>
 
+      {/* Bottom Section: Full-Width Multi-Track Timeline (100% Full Width across the bottom) */}
+      <div className="w-full">
+        <StudioTimeline
+          clips={timelineClips}
+          audioTrack={audioTrack}
+          subtitles={subtitles}
+          currentTimeSec={currentTimeSec}
+          totalDurationSec={totalDurationSec}
+          selectedClipId={selectedClipId}
+          onSelectClip={(id) => setSelectedClipId(id)}
+          onSeek={handleSeek}
+          onUpdateClipMotion={handleUpdateClipMotion}
+          onUpdateClipTransition={handleUpdateClipTransition}
+          onResizeBoundary={handleResizeClipBoundary}
+          onOpenTransitions={() => {}}
+        />
+      </div>
+
       {/* Render MP4 Dialog Modal */}
       {isExporting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
@@ -477,7 +543,7 @@ export function VidFlashAutoEditor() {
               </div>
               {!exportedBlobUrl && (
                 <button
-                  onClick={() => setIsExporting(false)}
+                  onClick={handleCloseRenderModal}
                   className="p-1 rounded-lg text-slate-400 hover:text-white"
                 >
                   <X className="w-4 h-4" />
@@ -513,6 +579,32 @@ export function VidFlashAutoEditor() {
                     />
                   </div>
                 </div>
+
+                {/* Hardware Power Governor Live Metrics */}
+                <div className="grid grid-cols-3 gap-2 pt-1 text-[10px] font-mono">
+                  <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <span className="text-slate-500 block text-[9px]">CPU LOAD</span>
+                    <span className="text-indigo-400 font-bold">
+                      {studioSettings.hardwareProfile === "balanced"
+                        ? "60% Cap"
+                        : studioSettings.hardwareProfile === "silent"
+                        ? "40% Cap"
+                        : "100% Turbo"}
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <span className="text-slate-500 block text-[9px]">RAM GUARD</span>
+                    <span className="text-purple-400 font-bold">
+                      {studioSettings.hardwareProfile === "silent" ? "50% Cap" : "80% Cap"}
+                    </span>
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                    <span className="text-slate-500 block text-[9px]">GPU POWER</span>
+                    <span className="text-emerald-400 font-bold">100% Direct</span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -532,10 +624,7 @@ export function VidFlashAutoEditor() {
 
                 <div className="pt-2 flex items-center justify-between gap-3">
                   <button
-                    onClick={() => {
-                      setIsExporting(false);
-                      setExportedBlobUrl(null);
-                    }}
+                    onClick={handleCloseRenderModal}
                     className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors"
                   >
                     Close
@@ -561,7 +650,7 @@ export function VidFlashAutoEditor() {
                 </div>
                 <p>{exportError}</p>
                 <button
-                  onClick={() => setIsExporting(false)}
+                  onClick={handleCloseRenderModal}
                   className="px-3 py-1.5 rounded-lg bg-red-800 text-white font-semibold"
                 >
                   Dismiss

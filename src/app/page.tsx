@@ -33,8 +33,13 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 space-y-12">
-        
+      <main
+        className={`flex-1 w-full mx-auto relative z-10 space-y-8 ${
+          mode === "audiobook"
+            ? "max-w-[1920px] px-2 sm:px-4 py-2"
+            : "max-w-7xl px-4 sm:px-6 lg:px-8 py-8 space-y-12"
+        }`}
+      >
         {mode === "gateway" && (
           <div className="flex flex-col items-center justify-center space-y-8 mt-12 mb-24">
             <div className="text-center space-y-4 max-w-2xl">
@@ -58,7 +63,7 @@ export default function Home() {
                     <Video className="w-8 h-8 text-white" />
                     <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                     </span>
                   </div>
                   <h2 className="text-2xl font-bold text-slate-200">AutoEditor</h2>
@@ -98,12 +103,14 @@ export default function Home() {
         )}
 
         {mode === "audiobook" && (
-          <div className="space-y-4">
-            <button onClick={() => setMode("gateway")} className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center mb-4">
-              &larr; Back to Pipeline Selection
-            </button>
-            <div className="border border-slate-800 rounded-2xl bg-slate-900/50 p-4 sm:p-6 min-h-[80vh]">
-               <VidFlashAutoEditor />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <button onClick={() => setMode("gateway")} className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center font-medium">
+                &larr; Back to Pipeline Selection
+              </button>
+            </div>
+            <div className="w-full">
+              <VidFlashAutoEditor />
             </div>
           </div>
         )}

@@ -4,13 +4,11 @@ import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   ZoomIn,
   ZoomOut,
-  Layers,
-  Music,
-  Type,
-  Video,
-  Sparkles,
-  Shuffle,
+  Maximize2,
+  Minimize2,
   Volume2,
+  Eye,
+  GripVertical,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -32,6 +30,7 @@ interface StudioTimelineProps {
   onSeek: (timeSec: number) => void;
   onUpdateClipMotion: (clipId: string, motion: MotionEffect) => void;
   onUpdateClipTransition: (clipId: string, transition: TransitionEffect) => void;
+  onResizeBoundary?: (clipIndex: number, newCutSec: number) => void;
   onOpenTransitions?: () => void;
 }
 
@@ -46,34 +45,50 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
   onSeek,
   onUpdateClipMotion,
   onUpdateClipTransition,
+  onResizeBoundary,
   onOpenTransitions,
 }) => {
-  const [zoomLevel, setZoomLevel] = useState<number>(35); // pixels per second
+  const [zoomLevel, setZoomLevel] = useState<number>(30); // pixels per second (0 = Fit All Mode)
+  const [isFitMode, setIsFitMode] = useState<boolean>(false);
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
 
+  // Active boundary drag state { index, currentCutSec }
+  const [activeDragBoundary, setActiveDragBoundary] = useState<{
+    index: number;
+    sec: number;
+  } | null>(null);
+
   const duration = Math.max(10, totalDurationSec);
-  const timelineWidthPx = Math.max(800, duration * zoomLevel);
+
+  // Compute effective zoom: in Fit mode, stretch across container width
+  const containerWidth = timelineRef.current?.clientWidth || 1200;
+  const effectiveZoom = isFitMode
+    ? Math.max(8, (containerWidth - 90) / duration)
+    : zoomLevel;
+
+  const timelineTrackWidthPx = duration * effectiveZoom;
 
   const handleSeekFromEvent = useCallback(
     (clientX: number) => {
       if (!timelineRef.current) return;
       const rect = timelineRef.current.getBoundingClientRect();
-      const clickX = clientX - rect.left + timelineRef.current.scrollLeft;
-      const targetSec = Math.max(0, Math.min(duration, clickX / zoomLevel));
+      const clickX = clientX - rect.left + timelineRef.current.scrollLeft - 70;
+      const targetSec = Math.max(0, Math.min(duration, clickX / effectiveZoom));
       onSeek(Number(targetSec.toFixed(2)));
     },
-    [duration, zoomLevel, onSeek]
+    [duration, effectiveZoom, onSeek]
   );
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (activeDragBoundary) return;
     setIsDraggingPlayhead(true);
     handleSeekFromEvent(e.clientX);
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingPlayhead) {
+      if (isDraggingPlayhead && !activeDragBoundary) {
         handleSeekFromEvent(e.clientX);
       }
     };
@@ -91,40 +106,133 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDraggingPlayhead, handleSeekFromEvent]);
+  }, [isDraggingPlayhead, activeDragBoundary, handleSeekFromEvent]);
 
-  const playheadPosPx = currentTimeSec * zoomLevel;
+  // Handle Interactive Boundary Resizing
+  const handleBoundaryMouseDown = (
+    e: React.MouseEvent,
+    clipIndex: number,
+    initialCutSec: number
+  ) => {
+    e.stopPropagation();
+    setActiveDragBoundary({ index: clipIndex, sec: initialCutSec });
+
+    const moveHandler = (moveEvent: MouseEvent) => {
+      if (!timelineRef.current) return;
+      const rect = timelineRef.current.getBoundingClientRect();
+      const clickX =
+        moveEvent.clientX - rect.left + timelineRef.current.scrollLeft - 70;
+      const rawSec = clickX / effectiveZoom;
+
+      const leftClip = clips[clipIndex];
+      const rightClip = clips[clipIndex + 1];
+      if (!leftClip || !rightClip) return;
+
+      const minDur = 0.3;
+      const clamped = Math.max(
+        leftClip.startSec + minDur,
+        Math.min(rightClip.endSec - minDur, rawSec)
+      );
+
+      setActiveDragBoundary({ index: clipIndex, sec: Number(clamped.toFixed(2)) });
+    };
+
+    const upHandler = (upEvent: MouseEvent) => {
+      window.removeEventListener("mousemove", moveHandler);
+      window.removeEventListener("mouseup", upHandler);
+
+      if (!timelineRef.current) {
+        setActiveDragBoundary(null);
+        return;
+      }
+      const rect = timelineRef.current.getBoundingClientRect();
+      const clickX =
+        upEvent.clientX - rect.left + timelineRef.current.scrollLeft - 70;
+      const rawSec = clickX / effectiveZoom;
+
+      const leftClip = clips[clipIndex];
+      const rightClip = clips[clipIndex + 1];
+      if (leftClip && rightClip && onResizeBoundary) {
+        const minDur = 0.3;
+        const finalSec = Math.max(
+          leftClip.startSec + minDur,
+          Math.min(rightClip.endSec - minDur, rawSec)
+        );
+        onResizeBoundary(clipIndex, Number(finalSec.toFixed(2)));
+      }
+      setActiveDragBoundary(null);
+    };
+
+    window.addEventListener("mousemove", moveHandler);
+    window.addEventListener("mouseup", upHandler);
+  };
+
+  const playheadPosPx = 70 + currentTimeSec * effectiveZoom;
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 backdrop-blur-md space-y-3.5 shadow-2xl">
-      {/* Timeline Controls Header */}
-      <div className="flex items-center justify-between border-b border-slate-800/90 pb-2.5">
-        <div className="flex items-center space-x-2.5 text-slate-200 font-bold text-xs sm:text-sm">
-          <div className="w-6 h-6 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
-            <Layers className="w-3.5 h-3.5" />
-          </div>
-          <span>Filmora Studio Multi-Track Timeline</span>
+    <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl space-y-0">
+      {/* Clean Timeline Top Toolbar */}
+      <div className="bg-[#121215] border-b border-[#2b2b36] px-3 py-1.5 flex items-center justify-between text-xs flex-wrap gap-2">
+        {/* Left: Track Summary */}
+        <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-400">
+          <span className="text-purple-400 font-bold">V1</span>
+          <span>•</span>
+          <span className="text-teal-400 font-bold">A1</span>
+          <span>•</span>
+          <span className="text-emerald-400 font-bold">T1</span>
+          <span className="text-slate-500 ml-2">
+            ({clips.length} images • {formatSecondsToTimecode(totalDurationSec)})
+          </span>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="flex items-center space-x-2 text-xs text-slate-400">
+        {/* Right: Fit Mode & Zoom Slider */}
+        <div className="flex items-center space-x-3 text-slate-400">
           <button
-            onClick={() => setZoomLevel((prev) => Math.max(15, prev - 5))}
-            className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:text-white transition-colors"
-            title="Zoom Out"
+            onClick={() => setIsFitMode((prev) => !prev)}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center space-x-1 transition-colors border ${
+              isFitMode
+                ? "bg-red-950/80 border-red-500 text-red-300"
+                : "bg-[#1f1f26] border-[#2b2b36] text-slate-300 hover:text-white"
+            }`}
+            title="Fit all clips to screen width"
           >
-            <ZoomOut className="w-3.5 h-3.5" />
+            {isFitMode ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+            <span>{isFitMode ? "Fit Active" : "Fit All"}</span>
           </button>
-          <span className="font-mono text-[10px] w-12 text-center text-slate-400 font-semibold">
-            {zoomLevel}px/s
-          </span>
-          <button
-            onClick={() => setZoomLevel((prev) => Math.min(90, prev + 5))}
-            className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:text-white transition-colors"
-            title="Zoom In"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
+
+          <div className="flex items-center space-x-1.5">
+            <button
+              onClick={() => {
+                setIsFitMode(false);
+                setZoomLevel((prev) => Math.max(8, prev - 6));
+              }}
+              className="p-1 rounded hover:bg-[#252530] hover:text-white"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <input
+              type="range"
+              min="8"
+              max="90"
+              value={effectiveZoom}
+              onChange={(e) => {
+                setIsFitMode(false);
+                setZoomLevel(parseInt(e.target.value, 10));
+              }}
+              className="w-24 accent-red-500 h-1 bg-[#252530] rounded cursor-pointer"
+            />
+            <button
+              onClick={() => {
+                setIsFitMode(false);
+                setZoomLevel((prev) => Math.min(90, prev + 6));
+              }}
+              className="p-1 rounded hover:bg-[#252530] hover:text-white"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -132,34 +240,45 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
       <div
         ref={timelineRef}
         onMouseDown={handleMouseDown}
-        className="relative w-full overflow-x-auto overflow-y-hidden bg-slate-950 rounded-xl border border-slate-800/90 select-none cursor-pointer py-2 pr-4 scrollbar-thin"
+        className="relative w-full overflow-x-auto overflow-y-hidden bg-[#0e0e11] select-none cursor-pointer py-1 scrollbar-thin"
       >
         <div
-          className="relative min-h-[220px] space-y-2.5"
-          style={{ width: `${timelineWidthPx}px` }}
+          className="relative min-h-[220px] space-y-1.5"
+          style={{ width: isFitMode ? "100%" : `${timelineTrackWidthPx + 100}px` }}
         >
           {/* Time Ruler */}
-          <div className="h-6 border-b border-slate-800/80 relative flex items-end">
+          <div className="h-6 border-b border-[#2b2b36] relative flex items-end ml-[70px]">
             {Array.from({ length: Math.ceil(duration) + 1 }).map((_, sec) => {
-              const step = zoomLevel < 25 ? 10 : zoomLevel < 45 ? 5 : 2;
+              const step =
+                effectiveZoom < 15
+                  ? 30
+                  : effectiveZoom < 30
+                  ? 15
+                  : effectiveZoom < 50
+                  ? 5
+                  : 2;
               if (sec % step !== 0) return null;
               return (
                 <div
                   key={sec}
-                  className="absolute bottom-0 text-[9px] font-mono text-slate-500 pl-1 border-l border-slate-800 flex items-end pb-0.5"
-                  style={{ left: `${sec * zoomLevel}px`, height: "14px" }}
+                  className="absolute bottom-0 text-[9px] font-mono text-slate-500 pl-1 border-l border-[#2b2b36] flex items-end pb-0.5"
+                  style={{ left: `${sec * effectiveZoom}px`, height: "14px" }}
                 >
-                  {Math.floor(sec / 60)}:{(sec % 60).toString().padStart(2, "0")}
+                  01:00:{sec.toString().padStart(2, "0")}:00
                 </div>
               );
             })}
           </div>
 
           {/* Cut Transition Markers Line */}
-          <div className="relative h-6 flex items-center">
+          <div className="relative h-5 flex items-center ml-[70px]">
             {clips.map((clip, idx) => {
               if (idx === 0) return null;
-              const cutPosPx = clip.startSec * zoomLevel;
+              let cutSec = clip.startSec;
+              if (activeDragBoundary && activeDragBoundary.index === idx - 1) {
+                cutSec = activeDragBoundary.sec;
+              }
+              const cutPosPx = cutSec * effectiveZoom;
               const isCut = clip.transition === "cut";
               return (
                 <div
@@ -170,17 +289,17 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
                     onOpenTransitions?.();
                   }}
                   className="absolute -translate-x-1/2 z-20 flex items-center justify-center cursor-pointer group"
-                  title={`Transition: ${clip.transition} (Click to customize)`}
+                  title={`Transition: ${clip.transition}`}
                 >
                   <div
-                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold border transition-all flex items-center space-x-1 ${
+                    className={`px-1.5 py-0.2 rounded text-[8px] font-mono font-bold border transition-all flex items-center space-x-0.5 ${
                       isCut
-                        ? "bg-slate-900/90 border-slate-700 text-slate-400 hover:border-indigo-400 hover:text-indigo-300"
-                        : "bg-indigo-950/90 border-indigo-500 text-indigo-300 shadow-md shadow-indigo-500/20"
+                        ? "bg-[#18181c] border-[#363644] text-slate-400 hover:border-red-400 hover:text-red-300"
+                        : "bg-red-950 border-red-500 text-red-300 shadow-sm"
                     }`}
                   >
                     <span>{isCut ? "⊘" : "✦"}</span>
-                    <span className="text-[8px] uppercase">
+                    <span className="uppercase text-[7px]">
                       {clip.transition.replace(/-/g, " ")}
                     </span>
                   </div>
@@ -189,117 +308,166 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
             })}
           </div>
 
-          {/* Track 1: Visual Image & Clip Track (V) */}
-          <div className="relative h-20 bg-slate-900/50 rounded-xl border border-slate-800/80 p-1 flex items-center overflow-hidden">
-            <div className="absolute left-2 top-2 z-10 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-slate-950/80 text-purple-400 border border-purple-500/30">
-              V (Video)
+          {/* TRACK 1: Visual Video (V1) */}
+          <div className="relative h-20 bg-[#141418] border-y border-[#202028] flex items-center">
+            {/* Left Track Header (V1) */}
+            <div className="sticky left-0 z-20 w-[70px] h-full bg-[#18181c] border-r border-[#2b2b36] flex flex-col justify-between p-1.5 text-[10px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-purple-400 font-bold">V1</span>
+                <Eye className="w-3 h-3 text-slate-500 hover:text-slate-300" />
+              </div>
+              <span className="text-[8px] text-slate-500 truncate">
+                {clips.length} Clips
+              </span>
             </div>
 
-            {clips.map((clip, index) => {
-              const leftPx = clip.startSec * zoomLevel;
-              const widthPx = Math.max(20, clip.durationSec * zoomLevel);
-              const isSelected = selectedClipId === clip.id;
+            {/* Video Clips Track */}
+            <div className="relative flex-1 h-full flex items-center">
+              {clips.map((clip, index) => {
+                let startSec = clip.startSec;
+                let endSec = clip.endSec;
 
-              return (
-                <div
-                  key={clip.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectClip(clip.id);
-                  }}
-                  style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
-                  className={`absolute top-1 bottom-1 rounded-lg overflow-hidden border transition-all cursor-pointer group flex flex-col justify-between p-1 bg-slate-950 ${
-                    isSelected
-                      ? "border-amber-400 ring-2 ring-amber-400/40 z-10"
-                      : "border-slate-800 hover:border-slate-600"
-                  }`}
-                >
-                  {/* Clip Background Thumbnail */}
-                  <img
-                    src={clip.mediaUrl}
-                    alt={clip.fileName}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
-                  />
+                if (activeDragBoundary) {
+                  if (activeDragBoundary.index === index - 1) {
+                    startSec = activeDragBoundary.sec;
+                  }
+                  if (activeDragBoundary.index === index) {
+                    endSec = activeDragBoundary.sec;
+                  }
+                }
 
-                  {/* Duration Badge */}
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-950/90 text-amber-300 border border-amber-500/40">
-                      {clip.durationSec.toFixed(1)}s
-                    </span>
-                    <span className="text-[8px] font-mono px-1 rounded bg-slate-900/80 text-slate-400">
-                      #{index + 1}
-                    </span>
-                  </div>
+                const currentDur = Math.max(0.2, endSec - startSec);
+                const leftPx = startSec * effectiveZoom;
+                const widthPx = Math.max(12, currentDur * effectiveZoom);
+                const isSelected = selectedClipId === clip.id;
 
-                  {/* Filename & Timestamp Label */}
-                  <div className="relative z-10 bg-slate-950/85 px-1 py-0.5 rounded text-[8px] font-mono text-slate-200 truncate">
-                    {clip.fileName}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Track 2: Audio Waveform Track (A) */}
-          <div className="relative h-12 bg-slate-900/50 rounded-xl border border-slate-800/80 p-1 flex items-center overflow-hidden">
-            <div className="absolute left-2 top-1.5 z-10 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-slate-950/80 text-teal-400 border border-teal-500/30">
-              A (Audio)
-            </div>
-
-            {audioTrack && audioTrack.waveformPeaks.length > 0 ? (
-              <div
-                className="absolute inset-0 flex items-center px-2 pointer-events-none"
-                style={{ width: `${audioTrack.durationSec * zoomLevel}px` }}
-              >
-                <div className="w-full h-8 flex items-center space-x-[2px]">
-                  {audioTrack.waveformPeaks.map((peak, pIndex) => (
-                    <div
-                      key={pIndex}
-                      style={{ height: `${Math.max(10, peak * 100)}%` }}
-                      className="flex-1 bg-gradient-to-t from-teal-500 to-emerald-400 rounded-full opacity-80"
+                return (
+                  <div
+                    key={clip.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectClip(clip.id);
+                    }}
+                    style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
+                    className={`absolute top-1 bottom-1 rounded overflow-hidden border transition-all cursor-pointer group flex flex-col justify-between p-1 bg-[#1a1a22] ${
+                      isSelected
+                        ? "border-red-500 ring-1 ring-red-500 z-10"
+                        : "border-[#2b2b36] hover:border-slate-500"
+                    }`}
+                  >
+                    {/* Thumbnail Image */}
+                    <img
+                      src={clip.mediaUrl}
+                      alt={clip.fileName}
+                      className="absolute inset-0 w-full h-full object-cover opacity-65 group-hover:opacity-85 transition-opacity"
                     />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="w-full text-center text-[10px] text-slate-600 italic">
-                No voiceover audio loaded
-              </div>
-            )}
+
+                    {/* Duration Badge */}
+                    <div className="relative z-10 flex items-center justify-between">
+                      <span className="text-[8px] font-mono font-bold px-1 rounded bg-black/80 text-amber-300 border border-amber-500/40">
+                        {currentDur.toFixed(1)}s
+                      </span>
+                      <span className="text-[7px] font-mono px-1 rounded bg-black/60 text-slate-400">
+                        #{index + 1}
+                      </span>
+                    </div>
+
+                    {/* Clip Name */}
+                    <div className="relative z-10 bg-black/85 px-1 py-0.2 rounded text-[7px] font-mono text-slate-200 truncate">
+                      {clip.fileName}
+                    </div>
+
+                    {/* Interactive Clip Boundary Sliding Handle on Right Edge */}
+                    {index < clips.length - 1 && (
+                      <div
+                        onMouseDown={(e) =>
+                          handleBoundaryMouseDown(e, index, clip.endSec)
+                        }
+                        className="absolute right-0 top-0 bottom-0 w-3 cursor-col-resize hover:bg-red-500/50 flex items-center justify-center z-20 group/handle transition-colors"
+                        title="Drag left/right to adjust clip hold duration"
+                      >
+                        <div className="w-1 h-5 rounded-full bg-slate-400 group-hover/handle:bg-white transition-colors" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Track 3: Subtitles & Captions Track (T) */}
-          <div className="relative h-9 bg-slate-900/50 rounded-xl border border-slate-800/80 p-1 flex items-center overflow-hidden">
-            <div className="absolute left-2 top-1 z-10 text-[9px] font-bold font-mono px-1.5 py-0.2 rounded bg-slate-950/80 text-amber-400 border border-amber-500/30">
-              T (Captions)
+          {/* TRACK 2: Voiceover Audio (A1) */}
+          <div className="relative h-12 bg-[#141418] border-b border-[#202028] flex items-center">
+            {/* Left Track Header (A1) */}
+            <div className="sticky left-0 z-20 w-[70px] h-full bg-[#18181c] border-r border-[#2b2b36] flex flex-col justify-between p-1.5 text-[10px] font-mono">
+              <div className="flex items-center justify-between">
+                <span className="text-teal-400 font-bold">A1</span>
+                <Volume2 className="w-3 h-3 text-slate-500 hover:text-slate-300" />
+              </div>
+              <span className="text-[8px] text-teal-400 truncate">Audio 1</span>
             </div>
 
-            {subtitles.map((cue) => {
-              const leftPx = cue.startSec * zoomLevel;
-              const widthPx = Math.max(
-                20,
-                (cue.endSec - cue.startSec) * zoomLevel
-              );
-              return (
+            {/* Audio Waveform Track */}
+            <div className="relative flex-1 h-full flex items-center">
+              {audioTrack && audioTrack.waveformPeaks.length > 0 ? (
                 <div
-                  key={cue.id}
-                  style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
-                  className="absolute top-1 bottom-1 rounded-md bg-amber-950/80 border border-amber-500/50 px-1.5 py-0.5 text-[9px] text-amber-200 truncate flex items-center font-medium shadow-sm"
-                  title={`[${formatSecondsToTimecode(cue.startSec)} - ${formatSecondsToTimecode(cue.endSec)}] ${cue.text}`}
+                  className="absolute inset-0 flex items-center px-1 pointer-events-none"
+                  style={{ width: `${audioTrack.durationSec * effectiveZoom}px` }}
                 >
-                  {cue.text}
+                  <div className="w-full h-8 flex items-center space-x-[1.5px]">
+                    {audioTrack.waveformPeaks.map((peak, pIndex) => (
+                      <div
+                        key={pIndex}
+                        style={{ height: `${Math.max(10, peak * 100)}%` }}
+                        className="flex-1 bg-gradient-to-t from-teal-600 to-emerald-400 rounded-full opacity-80"
+                      />
+                    ))}
+                  </div>
                 </div>
-              );
-            })}
+              ) : (
+                <div className="w-full text-center text-[9px] text-slate-600 italic">
+                  No audio loaded in A1
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Draggable Playhead Line */}
+          {/* TRACK 3: Captions & Subtitles (T1) */}
+          <div className="relative h-8 bg-[#141418] border-b border-[#202028] flex items-center">
+            {/* Left Track Header (T1) */}
+            <div className="sticky left-0 z-20 w-[70px] h-full bg-[#18181c] border-r border-[#2b2b36] flex flex-col justify-between p-1 text-[10px] font-mono">
+              <span className="text-emerald-400 font-bold">T1</span>
+              <span className="text-[7px] text-slate-500">Captions</span>
+            </div>
+
+            {/* Subtitle Cue blocks */}
+            <div className="relative flex-1 h-full flex items-center">
+              {subtitles.map((cue) => {
+                const leftPx = cue.startSec * effectiveZoom;
+                const widthPx = Math.max(
+                  20,
+                  (cue.endSec - cue.startSec) * effectiveZoom
+                );
+                return (
+                  <div
+                    key={cue.id}
+                    style={{ left: `${leftPx}px`, width: `${widthPx}px` }}
+                    className="absolute top-1 bottom-1 rounded bg-emerald-950/80 border border-emerald-500/50 px-1 text-[8px] text-emerald-200 truncate flex items-center font-medium"
+                    title={`[${formatSecondsToTimecode(cue.startSec)}] ${cue.text}`}
+                  >
+                    {cue.text}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Red DaVinci Playhead Needle */}
           <div
             style={{ left: `${playheadPosPx}px` }}
-            className="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-30 pointer-events-none transition-none shadow-lg shadow-amber-400/50"
+            className="absolute top-0 bottom-0 w-[1.5px] bg-red-500 z-30 pointer-events-none transition-none shadow-lg shadow-red-500/50"
           >
-            {/* Playhead Top Handle */}
-            <div className="w-3.5 h-3.5 bg-amber-400 transform -translate-x-[6px] -translate-y-1 rounded-full border-2 border-slate-950 shadow-md" />
+            {/* Red DaVinci Playhead Top Flag */}
+            <div className="w-3 h-3.5 bg-red-500 transform -translate-x-[5px] -translate-y-0.5 clip-flag shadow-md" />
           </div>
         </div>
       </div>
