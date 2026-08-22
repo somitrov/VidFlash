@@ -9,10 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
+        ui: ["var(--font-ui)", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+        sans: ["var(--font-ui)", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "'SF Mono'", "'Cascadia Code'", "'Segoe UI Mono'", "Consolas", "monospace"],
+        heading: ["var(--font-ui)", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont", "'Segoe UI'", "Roboto", "sans-serif"],
         poppins: ["var(--font-poppins)", "Poppins", "sans-serif"],
-        heading: ["var(--font-poppins)", "Poppins", "sans-serif"],
         openSans: ["var(--font-open-sans)", "Open Sans", "sans-serif"],
-        sans: ["var(--font-open-sans)", "Open Sans", "system-ui", "sans-serif"],
         stormGust: ["'Storm Gust'", "'StormGust'", "var(--font-poppins)", "sans-serif"],
       },
       colors: {

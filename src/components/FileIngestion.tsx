@@ -12,9 +12,11 @@ import {
   ArrowRight,
   Sparkles,
   Zap,
+  ListMusic,
 } from "lucide-react";
 import { MediaFileState } from "@/types";
 import { AdSenseBanner } from "@/components/AdSenseBanner";
+import { decodeAudioFiles, audioBufferToWavBlob } from "@/lib/engine/audioEngine";
 
 interface FileIngestionProps {
   mediaState: MediaFileState;
@@ -53,70 +55,78 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const handleFile = async (file: File) => {
+  const handleFiles = async (files: File[]) => {
+    if (!files || files.length === 0) return;
     setErrorMsg(null);
     setLoadingMedia(true);
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    const isVideo = ["mp4", "mkv", "mov", "webm", "avi", "3gp"].includes(ext);
-    const isAudio = ["mp3", "wav", "aac", "m4a", "amr", "flac", "ogg", "wma", "opus"].includes(ext);
-
-    if (!isVideo && !isAudio) {
-      setErrorMsg(
-        "Unsupported format. Please select AAC (.m4a), MP3, AMR, WAV, FLAC, OGG, or video files."
-      );
-      setLoadingMedia(false);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-
     try {
-      // Determine duration by loading into invisible Audio/Video element
-      let duration = 0;
-      if (isVideo) {
-        duration = await new Promise<number>((resolve) => {
-          const video = document.createElement("video");
-          video.preload = "metadata";
-          video.onloadedmetadata = () => {
-            resolve(video.duration || 0);
-          };
-          video.onerror = () => resolve(0);
-          video.src = objectUrl;
-        });
-      } else {
-        duration = await new Promise<number>((resolve) => {
-          const audio = document.createElement("audio");
-          audio.preload = "metadata";
-          audio.onloadedmetadata = () => {
-            resolve(audio.duration || 0);
-          };
-          audio.onerror = () => resolve(0);
-          audio.src = objectUrl;
-        });
+      // Check if single video file
+      if (files.length === 1) {
+        const file = files[0];
+        const ext = file.name.split(".").pop()?.toLowerCase() || "";
+        const isVideo = ["mp4", "mkv", "mov", "webm", "avi", "3gp"].includes(ext);
+
+        if (isVideo) {
+          const objectUrl = URL.createObjectURL(file);
+          const duration = await new Promise<number>((resolve) => {
+            const video = document.createElement("video");
+            video.preload = "metadata";
+            video.onloadedmetadata = () => resolve(video.duration || 0);
+            video.onerror = () => resolve(0);
+            video.src = objectUrl;
+          });
+
+          onMediaLoaded({
+            file,
+            mediaType: "video",
+            fileName: file.name,
+            fileSize: file.size,
+            duration,
+            formattedDuration: formatSeconds(duration),
+            previewUrl: objectUrl,
+          });
+          return;
+        }
+      }
+
+      // Audio ingestion (single or multi-part audio joining)
+      const audioExts = ["mp3", "wav", "aac", "m4a", "amr", "flac", "ogg", "wma", "opus"];
+      const audioFiles = files.filter((f) => {
+        const ext = f.name.split(".").pop()?.toLowerCase() || "";
+        return audioExts.includes(ext) || f.type.startsWith("audio/");
+      });
+
+      if (audioFiles.length === 0) {
+        setErrorMsg("Unsupported format. Please select AAC (.m4a), MP3, AMR, WAV, FLAC, OGG, or video files.");
+        return;
+      }
+
+      const decoded = await decodeAudioFiles(audioFiles);
+      const totalSize = audioFiles.reduce((acc, f) => acc + f.size, 0);
+
+      // Create synthetic audio File from merged WAV blob if multiple files
+      let finalFile: File | null = audioFiles[0];
+      if (audioFiles.length > 1 && decoded.audioBuffer) {
+        const wavBlob = audioBufferToWavBlob(decoded.audioBuffer);
+        finalFile = new File([wavBlob], `${decoded.fileName}.wav`, { type: "audio/wav" });
       }
 
       onMediaLoaded({
-        file,
-        mediaType: isVideo ? "video" : "audio",
-        fileName: file.name,
-        fileSize: file.size,
-        duration,
-        formattedDuration: formatSeconds(duration),
-        previewUrl: objectUrl,
+        file: finalFile,
+        audioBlob: decoded.audioBuffer ? audioBufferToWavBlob(decoded.audioBuffer) : null,
+        files: audioFiles,
+        parts: decoded.parts?.map((p) => ({ fileName: p.fileName, duration: p.durationSec })),
+        mediaType: "audio",
+        fileName: decoded.fileName,
+        fileSize: totalSize,
+        duration: decoded.durationSec,
+        formattedDuration: formatSeconds(decoded.durationSec),
+        previewUrl: decoded.audioUrl,
       });
     } catch (e) {
       console.error("Error inspecting media file:", e);
-      setErrorMsg("Failed to read duration from file. You can still proceed.");
-      onMediaLoaded({
-        file,
-        mediaType: isVideo ? "video" : "audio",
-        fileName: file.name,
-        fileSize: file.size,
-        duration: 0,
-        formattedDuration: "Unknown",
-        previewUrl: objectUrl,
-      });
+      setErrorMsg("Failed to decode audio. Please check file formats.");
     } finally {
       setLoadingMedia(false);
     }
@@ -125,14 +135,14 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(Array.from(e.dataTransfer.files));
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(Array.from(e.target.files));
     }
   };
 
@@ -167,6 +177,7 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           accept="audio/aac,audio/x-m4a,audio/m4a,audio/mpeg,audio/mp3,audio/amr,audio/3gpp,audio/wav,audio/x-wav,audio/flac,audio/ogg,video/mp4,video/x-matroska,video/webm,video/quicktime,audio/*,video/*"
           className="hidden"
           onChange={handleInputChange}
@@ -272,8 +283,8 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
 
           {/* Media Audio Preview */}
           {mediaState.previewUrl && (
-            <div className="pt-2">
-              <div className="text-xs font-medium text-slate-400 mb-2">
+            <div className="pt-2 space-y-3">
+              <div className="text-xs font-medium text-slate-400">
                 Audio Stream Preview:
               </div>
               <audio
@@ -281,6 +292,36 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
                 src={mediaState.previewUrl}
                 className="w-full h-10 rounded-lg bg-slate-950"
               />
+
+              {/* Multi-Audio Parts Breakdown */}
+              {mediaState.parts && mediaState.parts.length > 1 && (
+                <div className="space-y-1.5 p-3 rounded-xl bg-slate-950/70 border border-slate-800">
+                  <div className="flex items-center space-x-1.5 text-xs font-bold text-indigo-300 mb-1">
+                    <ListMusic className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Merged Audio Sequence ({mediaState.parts.length} clips joined in order)</span>
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                    {mediaState.parts.map((part, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-900/60 border border-slate-800/60 text-[11px]"
+                      >
+                        <div className="flex items-center space-x-2 truncate">
+                          <span className="font-mono text-slate-500 font-bold w-3 text-center">
+                            {idx + 1}
+                          </span>
+                          <span className="text-slate-300 truncate">
+                            {part.fileName}
+                          </span>
+                        </div>
+                        <span className="font-mono text-emerald-400 shrink-0 ml-2">
+                          {formatSeconds(part.duration)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -290,7 +331,7 @@ export const FileIngestion: React.FC<FileIngestionProps> = ({
               onClick={onNextStep}
               className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
             >
-              <span>Next: Customize Visual Banner</span>
+              <span>Next</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

@@ -33,17 +33,11 @@ export const StepProgress: React.FC<StepProgressProps> = ({
       subtitle: "FFmpeg WASM Engine",
       icon: Cpu,
     },
-    {
-      id: 4,
-      title: "4. YouTube & AI Notes",
-      subtitle: "Hindi Notes Pipeline",
-      icon: Sparkles,
-    },
   ];
 
   return (
     <div className="w-full bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 mb-8 backdrop-blur-md">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {steps.map((step) => {
           const Icon = step.icon;
           const isActive = currentStep === step.id;

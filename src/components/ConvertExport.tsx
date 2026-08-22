@@ -12,6 +12,9 @@ import {
   RotateCcw,
   Clock,
   Zap,
+  ChevronUp,
+  Music,
+  Film,
 } from "lucide-react";
 import { AdSenseBanner } from "@/components/AdSenseBanner";
 import confetti from "canvas-confetti";
@@ -24,7 +27,6 @@ interface ConvertExportProps {
   mediaState: MediaFileState;
   canvasDataUrl: string;
   settings: CanvasSettings;
-  onNextStep: () => void;
   onPrevStep: () => void;
 }
 
@@ -32,7 +34,6 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
   mediaState,
   canvasDataUrl,
   settings,
-  onNextStep,
   onPrevStep,
 }) => {
   const [status, setStatus] = useState<
@@ -44,15 +45,39 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [outputBlobUrl, setOutputBlobUrl] = useState<string | null>(null);
   const [etaSec, setEtaSec] = useState<number | null>(null);
+  const [showDownloadMenu, setShowDownloadMenu] = useState<boolean>(false);
 
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+  const adLogsRef = useRef<HTMLDivElement>(null);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(event.target as Node)) {
+        setShowDownloadMenu(false);
+      }
+    };
+    if (showDownloadMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDownloadMenu]);
 
   const addLog = (msg: string) => {
     setLogs((prev) => [...prev.slice(-150), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
+  // Scroll to top hero section when arriving at Step 3
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   // Clean up Blob URLs on unmount to prevent V8 memory leaks
@@ -76,6 +101,11 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
       URL.revokeObjectURL(outputBlobUrl);
       setOutputBlobUrl(null);
     }
+
+    // Smoothly jump/redirect viewport directly to the Ad & Execution logs section
+    setTimeout(() => {
+      adLogsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
 
     const t0 = Date.now();
 
@@ -144,12 +174,35 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
     }
   };
 
-  const handleDownload = () => {
+  const handleDownloadVideo = () => {
     if (!outputBlobUrl) return;
+    setShowDownloadMenu(false);
     const a = document.createElement("a");
     a.href = outputBlobUrl;
     const baseName = mediaState.fileName.replace(/\.[^/.]+$/, "");
     a.download = `${baseName}_YouTubeReady.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleDownloadAudio = () => {
+    setShowDownloadMenu(false);
+    const baseName = mediaState.fileName.replace(/\.[^/.]+$/, "");
+    let audioUrlToDownload = mediaState.previewUrl;
+
+    if (mediaState.audioBlob) {
+      audioUrlToDownload = URL.createObjectURL(mediaState.audioBlob);
+    } else if (mediaState.file) {
+      audioUrlToDownload = URL.createObjectURL(mediaState.file);
+    }
+
+    if (!audioUrlToDownload) return;
+
+    const a = document.createElement("a");
+    a.href = audioUrlToDownload;
+    const isWav = mediaState.audioBlob ? true : false;
+    a.download = isWav ? `${baseName}_JoinedAudio.wav` : `${baseName}_Audio.mp3`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -162,7 +215,7 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-8">
+    <div id="step-3-section" className="w-full max-w-4xl mx-auto space-y-8 scroll-mt-24">
       <div className="text-center space-y-2">
         <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-white via-emerald-100 to-emerald-300 bg-clip-text text-transparent">
           Step 3: Client-Side FFmpeg Turbo Conversion
@@ -274,13 +327,74 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
                 <span>Re-render Banner</span>
               </button>
 
-              <button
-                onClick={handleDownload}
-                className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-500/25 transition-all transform hover:scale-[1.02]"
-              >
-                <Download className="w-5 h-5" />
-                <span>Download YouTube MP4 File</span>
-              </button>
+              <div ref={downloadMenuRef} className="relative w-full sm:w-auto">
+                {/* Upward Pop-up Format Selector Menu */}
+                {showDownloadMenu && (
+                  <div className="absolute bottom-full mb-3 right-0 sm:right-0 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl shadow-black/90 p-2.5 space-y-1.5 z-30 animate-in fade-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
+                    <div className="px-3 py-1.5 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Choose Export Format
+                    </div>
+
+                    {/* Option 1: Download MP3 (Audio) */}
+                    <button
+                      onClick={handleDownloadAudio}
+                      className="w-full flex items-center space-x-3 p-2.5 rounded-xl hover:bg-indigo-600/20 border border-transparent hover:border-indigo-500/40 text-left transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/30 group-hover:scale-105 transition-transform">
+                        <Music className="w-5 h-5" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <div className="text-xs font-bold text-slate-100 group-hover:text-indigo-300 transition-colors flex items-center space-x-1.5">
+                          <span>Download MP3</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-500/30">
+                            AUDIO
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {mediaState.parts && mediaState.parts.length > 1
+                            ? `${mediaState.parts.length} Joined audio clips`
+                            : "Clean voiceover audio stream"}
+                        </p>
+                      </div>
+                    </button>
+
+                    {/* Option 2: Download MP4 (Video) */}
+                    <button
+                      onClick={handleDownloadVideo}
+                      className="w-full flex items-center space-x-3 p-2.5 rounded-xl hover:bg-emerald-600/20 border border-transparent hover:border-emerald-500/40 text-left transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30 group-hover:scale-105 transition-transform">
+                        <Film className="w-5 h-5" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <div className="text-xs font-bold text-slate-100 group-hover:text-emerald-300 transition-colors flex items-center space-x-1.5">
+                          <span>Download MP4</span>
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                            VIDEO
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          YouTube-ready 144p banner video
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                {/* Main Download Button */}
+                <button
+                  onClick={() => setShowDownloadMenu((prev) => !prev)}
+                  className="w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-500/25 transition-all transform hover:scale-[1.02]"
+                >
+                  <Download className="w-5 h-5" />
+                  <span>Download</span>
+                  <ChevronUp
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showDownloadMenu ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -301,7 +415,15 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
           </div>
         )}
 
-        <div className="space-y-2 pt-2">
+      </div>
+
+      {/* Ad & Execution Logs Section (Jump Target on Start Conversion) */}
+      <div ref={adLogsRef} className="space-y-6 scroll-mt-24">
+        {/* Non-intrusive Minimalist Ad Banner */}
+        <AdSenseBanner />
+
+        {/* Standalone FFmpeg Execution Logs Card */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur-md space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
               <Terminal className="w-4 h-4 text-slate-500" />
@@ -312,7 +434,10 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
             </span>
           </div>
 
-          <div className="h-40 rounded-xl bg-slate-950 border border-slate-800/80 p-3 font-mono text-[11px] text-slate-400 overflow-y-auto space-y-1">
+          <div
+            ref={logContainerRef}
+            className="h-40 rounded-xl bg-slate-950 border border-slate-800/80 p-3 font-mono text-[11px] text-slate-400 overflow-y-auto space-y-1"
+          >
             {logs.length === 0 ? (
               <p className="text-slate-600 italic">
                 Logs will appear here during execution...
@@ -324,29 +449,17 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
                 </div>
               ))
             )}
-            <div ref={logsEndRef} />
           </div>
         </div>
       </div>
 
-      {/* Non-intrusive Minimalist Ad Banner */}
-      <AdSenseBanner />
-
-      <div className="flex items-center justify-between pt-2">
+      <div className="flex items-center justify-start pt-2">
         <button
           onClick={onPrevStep}
           className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Banner Customizer</span>
-        </button>
-
-        <button
-          onClick={onNextStep}
-          className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
-        >
-          <span>Next: YouTube & AI Notes Guide</span>
-          <ArrowRight className="w-4 h-4" />
+          <span>Back</span>
         </button>
       </div>
     </div>

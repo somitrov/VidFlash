@@ -41,6 +41,9 @@ export interface CanvasSettings {
 
 export interface MediaFileState {
   file: File | null;
+  audioBlob?: Blob | null;
+  files?: File[];
+  parts?: { fileName: string; duration: number }[];
   mediaType: "audio" | "video" | null;
   fileName: string;
   fileSize: number;

@@ -820,7 +820,7 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
     ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8">
+    <div id="step-2-section" className="w-full max-w-6xl mx-auto space-y-8 scroll-mt-24">
       <div className="text-center space-y-2">
         <h2 className="text-2xl sm:text-3xl font-extrabold bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent">
           Step 2: Customize Visual Banner Overlay
@@ -1228,14 +1228,14 @@ export const CanvasStudio: React.FC<CanvasStudioProps> = ({
               className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to Upload</span>
+              <span>Back</span>
             </button>
 
             <button
               onClick={onNextStep}
               className="flex items-center space-x-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all transform hover:-translate-y-0.5"
             >
-              <span>Next: Convert & Export MP4</span>
+              <span>Next</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

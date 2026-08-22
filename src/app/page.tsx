@@ -2,139 +2,110 @@
 
 import React, { useState, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
-import { StepProgress } from "@/components/StepProgress";
-import { FileIngestion } from "@/components/FileIngestion";
-import { CanvasStudio } from "@/components/CanvasStudio";
-import { ConvertExport } from "@/components/ConvertExport";
-import { YouTubePipelineGuide } from "@/components/YouTubePipelineGuide";
 import { FAQSection, AboutSection, LegalModal } from "@/components/LegalContent";
-import { MediaFileState, CanvasSettings } from "@/types";
-import { ShieldCheck, Cpu, Video, FileText, Lock, Mail } from "lucide-react";
+import { ShieldCheck, Cpu, Video, FileText, Lock, Mail, Mic, PlaySquare } from "lucide-react";
+import { VidFlashFlow } from "@/components/VidFlashFlow";
+import { VidFlashAutoEditor } from "@/components/autoeditor/VidFlashAutoEditor";
 
 export default function Home() {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [legalModalType, setLegalModalType] = useState<"privacy" | "terms" | "contact" | null>(null);
+  const [mode, setMode] = useState<"gateway" | "vidflash" | "audiobook">("gateway");
+  const [legalModalType, setLegalModalType] = useState<"privacy" | "terms" | "contact" | "sale" | null>(null);
 
   const faqRef = useRef<HTMLDivElement>(null);
-
-  // Ingested Media State
-  const [mediaState, setMediaState] = useState<MediaFileState>({
-    file: null,
-    mediaType: null,
-    fileName: "",
-    fileSize: 0,
-    duration: 0,
-    formattedDuration: "",
-    previewUrl: null,
-  });
-
-  // Canvas Overlay Settings
-  const [canvasSettings, setCanvasSettings] = useState<CanvasSettings>({
-    preset: "gradient-indigo",
-    customBgImage: null,
-    overlayOpacity: 0.6,
-    resolution: { width: 256, height: 144 },
-    resolutionPreset: "144p",
-    meetingTitle: "Google Meet Discussion",
-    meetingSubtitle: "Hindi/Hinglish Audio Recording • 2026",
-    participants: "Hosted by VidFlash.in",
-    badgeText: "Presented by VidFlash",
-    showBadge: true,
-    titleColor: "#ffffff",
-    subtitleColor: "#cbd5e1",
-    badgeColor: "#7c3aed",
-    fontSize: "large",
-    textAlign: "left",
-    template: "google-meet",
-    channelLogo: null,
-    customBgVideo: null,
-    ctaText: "SUBSCRIBE NOW",
-    showCta: true,
-    showParticles: true,
-    audioCopyMode: true,
-    frameRate: 1,
-  });
-
-  const [canvasDataUrl, setCanvasDataUrl] = useState<string>("");
-
-  const handleMediaLoaded = (newMedia: MediaFileState) => {
-    setMediaState(newMedia);
-
-    if (newMedia.fileName) {
-      const cleanTitle = newMedia.fileName
-        .replace(/\.[^/.]+$/, "")
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-
-      setCanvasSettings((prev) => ({
-        ...prev,
-        meetingTitle: cleanTitle || "Google Meet Discussion",
-        meetingSubtitle: `Recording (${newMedia.formattedDuration}) • Hindi Notes`,
-      }));
-    }
-  };
 
   const scrollToFAQ = () => {
     faqRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 relative">
       {/* Background Ambient Glow Effects */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-3xl pointer-events-none animate-subtle-glow" />
       <div className="absolute top-1/3 right-1/4 w-[450px] h-[450px] bg-purple-600/10 rounded-full blur-3xl pointer-events-none animate-subtle-glow" />
       <div className="absolute bottom-10 left-1/3 w-[600px] h-[600px] bg-emerald-600/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Top Navbar */}
+      {/* Top Navbar (Sticky) */}
       <Navbar
-        onOpenGuide={() => setCurrentStep(4)}
+        onOpenGuide={() => {}}
         onOpenLegal={(type) => setLegalModalType(type)}
         onScrollToFAQ={scrollToFAQ}
+        onGoHome={() => setMode("gateway")}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 space-y-12">
-        {/* Step Progress Wizard */}
-        <StepProgress
-          currentStep={currentStep}
-          onSelectStep={(step) => setCurrentStep(step)}
-          isMediaLoaded={!!mediaState.file}
-        />
+        
+        {mode === "gateway" && (
+          <div className="flex flex-col items-center justify-center space-y-8 mt-12 mb-24">
+            <div className="text-center space-y-4 max-w-2xl">
+              <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 text-transparent bg-clip-text">
+                Select Your Pipeline
+              </h1>
+              <p className="text-slate-400 text-lg">
+                Choose the workflow that best fits your content creation needs. Both run entirely in your browser with zero server uploads.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+              {/* AutoEditor Card */}
+              <button 
+                onClick={() => setMode("audiobook")}
+                className="group relative bg-slate-900/50 border border-slate-800 rounded-2xl p-8 hover:border-emerald-500/50 transition-all duration-300 text-left overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+                  <div className="relative flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 shadow-lg shadow-indigo-500/25 text-white font-bold ring-2 ring-indigo-500/30 mb-2">
+                    <Video className="w-8 h-8 text-white" />
+                    <span className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                    </span>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-200">AutoEditor</h2>
+                  <p className="text-slate-400">
+                    Auto-sync a folder of images to an audio voiceover using timestamp metadata. Finished video in seconds, no manual timeline dragging.
+                  </p>
+                </div>
+              </button>
 
-        {/* Step 1: File Dropzone & Ingestion */}
-        {currentStep === 1 && (
-          <FileIngestion
-            mediaState={mediaState}
-            onMediaLoaded={handleMediaLoaded}
-            onNextStep={() => setCurrentStep(2)}
-          />
+              {/* Audiobook Maker Card */}
+              <button 
+                onClick={() => setMode("vidflash")}
+                className="group relative bg-slate-900/50 border border-slate-800 rounded-2xl p-8 hover:border-indigo-500/50 transition-all duration-300 text-left overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+                  <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-2 overflow-hidden shadow-lg shadow-red-500/10">
+                    <img src="/YouTube.webp" alt="YouTube" className="w-10 h-10 object-contain" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-200">VidMaker</h2>
+                  <p className="text-slate-400">
+                    Convert audiobooks, podcasts, and recordings into YouTube-ready MP4s with custom static banners. Perfect for long-form audio with zero server upload.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Step 2: Canvas Studio & Banner Design */}
-        {currentStep === 2 && (
-          <CanvasStudio
-            settings={canvasSettings}
-            onChangeSettings={(newSettings) => setCanvasSettings(newSettings)}
-            onCanvasDataUrlChange={(url) => setCanvasDataUrl(url)}
-            onNextStep={() => setCurrentStep(3)}
-            onPrevStep={() => setCurrentStep(1)}
-          />
+        {mode === "vidflash" && (
+          <div className="space-y-4">
+            <button onClick={() => setMode("gateway")} className="text-sm text-indigo-400 hover:text-indigo-300 flex items-center mb-4">
+              &larr; Back to Pipeline Selection
+            </button>
+            <VidFlashFlow />
+          </div>
         )}
 
-        {/* Step 3: FFmpeg WASM Conversion & Download */}
-        {currentStep === 3 && (
-          <ConvertExport
-            mediaState={mediaState}
-            canvasDataUrl={canvasDataUrl}
-            settings={canvasSettings}
-            onNextStep={() => setCurrentStep(4)}
-            onPrevStep={() => setCurrentStep(2)}
-          />
-        )}
-
-        {/* Step 4: YouTube & Gemini Guide */}
-        {currentStep === 4 && (
-          <YouTubePipelineGuide onPrevStep={() => setCurrentStep(3)} />
+        {mode === "audiobook" && (
+          <div className="space-y-4">
+            <button onClick={() => setMode("gateway")} className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center mb-4">
+              &larr; Back to Pipeline Selection
+            </button>
+            <div className="border border-slate-800 rounded-2xl bg-slate-900/50 p-4 sm:p-6 min-h-[80vh]">
+               <VidFlashAutoEditor />
+            </div>
+          </div>
         )}
 
         {/* About VidFlash Section */}
@@ -152,7 +123,7 @@ export default function Home() {
           <div className="flex items-center space-x-2">
             <Video className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-300">
-              VidFlash Matrix
+              VidFlash.in
             </span>
             <span>— 100% In-Browser Media Converter</span>
           </div>
@@ -188,10 +159,6 @@ export default function Home() {
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Zero-Server Privacy</span>
             </span>
-            <span className="flex items-center space-x-1">
-              <Cpu className="w-3.5 h-3.5 text-purple-400" />
-              <span>144p WASM Turbo</span>
-            </span>
           </div>
         </div>
       </footer>
@@ -200,6 +167,7 @@ export default function Home() {
       <LegalModal
         type={legalModalType}
         onClose={() => setLegalModalType(null)}
+        onSwitchType={(type) => setLegalModalType(type)}
       />
     </div>
   );

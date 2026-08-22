@@ -25,34 +25,40 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    category: "Privacy",
-    question: "Is my meeting recording video or audio uploaded to any server?",
+    category: "Technical",
+    question: "How does the VidFlash AutoEditor sync images to voiceover automatically?",
     answer:
-      "No! 100% of the media processing occurs directly inside your web browser using WebAssembly (WASM) & FFmpeg. Your files never leave your computer or phone, guaranteeing zero server upload and absolute privacy for sensitive corporate or academic meetings.",
+      "VidFlash AutoEditor parses the exact timestamp embedded in each image or video filename (e.g., 00_15_scene.png or 01_24_topic.jpg). When you click 'Build Timeline', clips are placed onto the timeline at that exact second, perfectly matched to your voiceover audio. You can then adjust clip boundaries, add Ken Burns dynamic zooming motion, mix multi-clip transitions, and burn in synced subtitles without manual dragging.",
   },
   {
     category: "Technical",
-    question: "Why does VidFlash use 144p resolution at 1 FPS?",
+    question: "What is the Audiobook Maker and why does it use 144p resolution at 1 FPS?",
     answer:
-      "YouTube auto-transcription requires an uploaded video file, but speech recognition models care only about audio quality, not video resolution. By rendering a static banner frame at 144p resolution and 1 frame per second (1FPS), processing speeds increase up to 50x while reducing output video file size by over 90%.",
+      "Audiobook Maker is engineered for narrators, podcasters, and educators who need to publish long-form audio recordings to YouTube for public streaming or free automated transcription. YouTube requires a video feed to ingest audio, but speech recognition models only require clear sound. By muxing a customizable visual banner at 1 frame per second (1 FPS), processing is up to 50x faster with 90%+ smaller file sizes and direct stream copy.",
+  },
+  {
+    category: "Privacy",
+    question: "Is my audio, video, or narration uploaded to any remote server?",
+    answer:
+      "No! VidFlash.in is built on a strict zero-server privacy architecture. Media conversion runs locally inside your web browser using WebAssembly (FFmpeg WASM), and video rendering runs directly on your local system CPU. Your files never leave your device, ensuring complete privacy for confidential meetings, commercial voiceovers, and proprietary audiobook manuscripts.",
   },
   {
     category: "YouTube & AI",
-    question: "How does YouTube Hindi/Hinglish auto-transcription work?",
+    question: "How does YouTube auto-transcription and Google Gemini AI note extraction work?",
     answer:
-      "Once you upload your converted MP4 to YouTube Studio (set to Unlisted or Private visibility), YouTube automatically processes the audio and generates accurate Hindi/Hinglish subtitles. You can then copy the full transcript text and paste it into Google AI Studio (Gemini 1.5 Pro) to extract comprehensive meeting notes.",
+      "Once you export your lightweight MP4 from VidFlash, upload it to YouTube Studio (set to Unlisted or Private). YouTube automatically transcribes the narration and generates accurate multi-language captions. You can then copy the full transcript text into Google AI Studio (Gemini 1.5 Pro / Flash) or ChatGPT to generate executive meeting summaries, chapter timestamps, and structured notes.",
   },
   {
     category: "General",
-    question: "Which file formats are supported by VidFlash Matrix?",
+    question: "Which media file formats are supported by VidFlash.in?",
     answer:
-      "VidFlash supports all popular audio formats including AAC (.m4a), MP3, AMR, WAV, FLAC, OGG, WMA, OPUS, as well as video formats like MP4, MKV, WEBM, and MOV.",
+      "VidFlash.in supports all standard audio formats (MP3, AAC/M4A, WAV, FLAC, OGG, AMR, OPUS, WMA), image formats (PNG, JPG, JPEG, WEBP), and video clip formats (MP4, MKV, WEBM, MOV).",
   },
   {
     category: "General",
-    question: "Is VidFlash completely free to use?",
+    question: "Is VidFlash.in completely free to use?",
     answer:
-      "Yes, VidFlash Matrix is 100% free with zero registration, zero limits, and no watermark required.",
+      "Yes, VidFlash.in is 100% free with zero registration required, zero watermarks, and no artificial file size or duration limitations.",
   },
 ];
 
@@ -74,7 +80,7 @@ export const FAQSection: React.FC = () => {
           Frequently Asked Questions (FAQ)
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto">
-          Everything you need to know about VidFlash Matrix in-browser conversion, privacy protections, and YouTube Gemini AI workflows.
+          Everything you need to know about VidFlash.in automated timeline editing, in-browser WASM conversion, privacy guarantees, and YouTube AI workflows.
         </p>
       </div>
 
@@ -127,10 +133,10 @@ export const AboutSection: React.FC = () => {
         </div>
         <div>
           <h2 className="text-lg font-bold text-slate-100">
-            About VidFlash Matrix
+            About VidFlash.in
           </h2>
           <p className="text-xs text-slate-400">
-            Ultra-fast in-browser audio & meeting video converter engineered for free YouTube auto-transcription.
+            Next-generation creator platform engineered for automated video assembly, audiobook publishing, and AI transcription workflows.
           </p>
         </div>
       </div>
@@ -142,27 +148,27 @@ export const AboutSection: React.FC = () => {
             <span>100% Client-Side Privacy</span>
           </div>
           <p className="text-slate-400 leading-relaxed">
-            Powered by WebAssembly (FFmpeg WASM), all conversions happen locally on your device CPU. Zero bytes leave your browser.
+            Powered by WebAssembly (FFmpeg WASM) and local edge execution, media encoding occurs directly on your device CPU with zero data transmission to external servers.
           </p>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
           <div className="flex items-center space-x-2 text-indigo-300 font-bold">
             <Cpu className="w-4 h-4 text-purple-400" />
-            <span>50x Faster 144p Muxing</span>
+            <span>Dual Production Pipelines</span>
           </div>
           <p className="text-slate-400 leading-relaxed">
-            By attaching a static banner at 1 FPS, files process up to 50 times faster while generating lightweight MP4 uploads.
+            Switch seamlessly between VidFlash AutoEditor (instant timestamp-to-voiceover video assembly) and Audiobook Maker (1 FPS turbo MP4 muxing).
           </p>
         </div>
 
         <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
           <div className="flex items-center space-x-2 text-indigo-300 font-bold">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Gemini AI Ready</span>
+            <span>YouTube & Gemini AI Ready</span>
           </div>
           <p className="text-slate-400 leading-relaxed">
-            Extract Hindi/Hinglish meeting notes for free using YouTube Studio auto-captions and Google AI Studio Gemini models.
+            Engineered to produce ultra-lightweight, YouTube-compliant video files ready for automated multi-language transcription and Gemini AI note extraction.
           </p>
         </div>
       </div>
@@ -171,11 +177,12 @@ export const AboutSection: React.FC = () => {
 };
 
 interface LegalModalProps {
-  type: "privacy" | "terms" | "contact" | null;
+  type: "privacy" | "terms" | "contact" | "sale" | null;
   onClose: () => void;
+  onSwitchType?: (type: "privacy" | "terms" | "contact" | "sale") => void;
 }
 
-export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
+export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose, onSwitchType }) => {
   if (!type) return null;
 
   return (
@@ -186,10 +193,12 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
             {type === "privacy" && <Lock className="w-5 h-5 text-emerald-400" />}
             {type === "terms" && <FileText className="w-5 h-5 text-indigo-400" />}
             {type === "contact" && <Mail className="w-5 h-5 text-purple-400" />}
+            {type === "sale" && <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />}
             <h3 className="text-lg font-bold text-slate-100">
               {type === "privacy" && "Privacy Policy"}
               {type === "terms" && "Terms of Service"}
               {type === "contact" && "Contact & Support"}
+              {type === "sale" && "Platform Acquisition & Investment Offering"}
             </h3>
           </div>
           <button
@@ -201,26 +210,121 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
         </div>
 
         <div className="text-xs sm:text-sm text-slate-300 leading-relaxed space-y-4 font-openSans">
+          {type === "sale" && (
+            <div className="space-y-5">
+              {/* Highlight Valuation Card */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 border border-amber-500/30 text-center space-y-2">
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wide">
+                  <span>Exclusive Acquisition Offering</span>
+                </div>
+                <div className="text-3xl font-extrabold text-white tracking-tight">
+                  $1,080,000 USD <span className="text-sm font-semibold text-amber-300">(₹9.00 Crore INR)</span>
+                </div>
+                <p className="text-slate-300 text-xs max-w-lg mx-auto">
+                  100% full intellectual property, complete full-stack web + WASM codebase, zero-server architecture, and brand domain ready for strategic acquisition or initial seed funding.
+                </p>
+              </div>
+
+              {/* Complete Capabilities & Properties */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-white text-sm flex items-center space-x-2">
+                  <Zap className="w-4 h-4 text-indigo-400" />
+                  <span>Platform Core Pillars & Capabilities</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                    <div className="font-bold text-emerald-400 text-xs flex items-center space-x-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>1. VidFlash AutoEditor</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      Zero-drag autonomous timeline assembly. Auto-syncs batches of AI/folder images to audio narration via timestamp metadata, with built-in subtitle burns, Ken Burns zoom motion, and smart transition mixing.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                    <div className="font-bold text-indigo-400 text-xs flex items-center space-x-1.5">
+                      <Cpu className="w-3.5 h-3.5" />
+                      <span>2. Audiobook Maker (144p WASM)</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-normal">
+                      High-throughput client-side FFmpeg WebAssembly muxing at 1 FPS. Converts multi-hour audiobooks, meetings, and podcasts into lightweight YouTube-ready MP4s with customizable animated banners.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-amber-400 text-xs flex items-center space-x-1.5">
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>3. Zero-Server Cost & Infinite Scalability</span>
+                  </div>
+                  <p className="text-slate-400 text-xs leading-normal">
+                    Media processing runs client-side on consumer device CPUs. Scales effortlessly to millions of users with zero cloud video encoding fees and negligible hosting overhead.
+                  </p>
+                </div>
+              </div>
+
+              {/* Future Predictions & Roadmap */}
+              <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                <h4 className="font-bold text-white text-xs flex items-center space-x-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Future Predictions & Growth Roadmap</span>
+                </h4>
+                <ul className="text-slate-400 text-xs space-y-1 list-disc list-inside">
+                  <li>AI voiceover cloning and automated multi-track background music generator.</li>
+                  <li>One-click multi-format social exports (YouTube Shorts, Instagram Reels, TikTok 9:16).</li>
+                  <li>Direct YouTube Studio API cloud integration for automated batch channel uploads.</li>
+                  <li>High-margin SaaS subscription monetization model for content creators & agencies.</li>
+                </ul>
+              </div>
+
+              {/* Contact Button linking to Contact & Support Pop */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border border-indigo-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center space-x-2 text-indigo-200 font-bold text-xs">
+                    <Mail className="w-4 h-4 text-indigo-400" />
+                    <span>Direct Acquisition & Investor Contact</span>
+                  </div>
+                  <p className="text-slate-400 text-xs">
+                    Reach out for strategic acquisition, technical diligence, or term sheets.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onSwitchType ? onSwitchType("contact") : undefined}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center space-x-2 shrink-0 cursor-pointer"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Contact & Support</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {type === "privacy" && (
             <>
               <p className="font-semibold text-slate-200">Effective Date: August 2026</p>
               <p>
-                At <strong>VidFlash.in</strong>, user privacy is our highest priority. This Privacy Policy outlines how your data is treated when using our web application.
+                At <strong>VidFlash.in</strong>, privacy, data integrity, and intellectual property protection are core foundational principles. This Privacy Policy details how your information is handled when accessing our media production suite.
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">1. Local Processing Guarantee</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">1. Local Processing Guarantee (Zero-Server Architecture)</h4>
               <p>
-                VidFlash Matrix utilizes WebAssembly (FFmpeg WASM) to execute media conversion strictly within your local browser environment. Audio, video, and image files uploaded to the application are processed on your local device CPU and are NEVER transmitted to external servers.
+                VidFlash.in executes all video assembly and media muxing locally. In-browser conversions operate via WebAssembly (FFmpeg WASM), and render pipelines run on your local device CPU. Your source audio files, voiceover tracks, script files, and graphic imagery are never uploaded, stored, transmitted, or monitored on remote servers.
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">2. Google AdSense & Third-Party Vendors</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">2. Google AdSense & Advertising Cookies</h4>
               <p>
-                VidFlash.in uses Google AdSense to serve advertisements. Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to your website or other websites. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to your sites and/or other sites on the Internet.
+                VidFlash.in uses Google AdSense to deliver relevant advertisements. Third-party vendors, including Google, use cookies to serve ads based on user visits to this website and other sites across the web. Google's use of advertising cookies enables it and its network partners to serve tailored ads to users.
               </p>
               <p>
-                Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer" className="text-indigo-400 underline">Google Ad Settings</a>.
+                Users can manage personalized ad preferences or opt out of interest-based advertising at any time by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noreferrer" className="text-indigo-400 underline">Google Ad Settings</a> or <a href="https://www.aboutads.info" target="_blank" rel="noreferrer" className="text-indigo-400 underline">aboutads.info</a>.
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">3. Log Files & Analytics</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">3. Analytics & Operational Telemetry</h4>
               <p>
-                Standard web analytics may collect basic anonymized technical information such as browser type, operating system, referring site, and date/time of access to improve application stability.
+                To maintain application stability and performance, standard anonymous technical parameters (such as browser engine, device screen resolution, and error telemetry) may be processed without identifying individual users.
+              </p>
+              <h4 className="font-bold text-indigo-300 text-sm">4. Data Retention & User Rights</h4>
+              <p>
+                Because media encoding occurs locally in memory and temporary local directories, closing or refreshing your browser tab immediately frees active media buffers. You retain full, exclusive ownership of all output files.
               </p>
             </>
           )}
@@ -229,19 +333,23 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
             <>
               <p className="font-semibold text-slate-200">Effective Date: August 2026</p>
               <p>
-                By accessing and using <strong>VidFlash.in</strong> ("VidFlash Matrix"), you agree to comply with and be bound by the following Terms of Service:
+                Welcome to <strong>VidFlash.in</strong> ("VidFlash"). By accessing or utilizing our platform, services, and associated web tools, you agree to be bound by the following Terms of Service:
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">1. Permitted Use</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">1. Scope of Service & Permitted Use</h4>
               <p>
-                VidFlash Matrix is provided as a free utility for converting personal, corporate, or educational media files into lightweight MP4 videos for YouTube transcription purposes. You agree not to use VidFlash for processing copyrighted material without proper authorization.
+                VidFlash.in provides creator-focused utilities including the VidFlash AutoEditor (timestamp-based audio/image synchronization) and Audiobook Maker (144p 1 FPS WebAssembly video muxing). You are granted a non-exclusive license to use the service for personal, educational, commercial, and professional media production.
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">2. Disclaimer of Warranties</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">2. Intellectual Property & Content Rights</h4>
               <p>
-                The service is provided on an "AS IS" and "AS AVAILABLE" basis. VidFlash.in makes no warranties, expressed or implied, regarding performance, availability, or compatibility with all browser hardware configurations.
+                You retain complete and unencumbered ownership of all audio, imagery, script files, and finalized video productions generated using VidFlash.in. You represent and warrant that you hold all necessary licenses and permissions for any third-party copyrighted content imported into the tool.
               </p>
-              <h4 className="font-bold text-indigo-300 text-sm">3. Limitation of Liability</h4>
+              <h4 className="font-bold text-indigo-300 text-sm">3. Technical Availability & Hardware Dependencies</h4>
               <p>
-                In no event shall VidFlash.in or its developers be liable for any direct, indirect, incidental, or consequential damages resulting from the use or inability to use this web service.
+                VidFlash.in utilizes advanced browser WebAssembly technologies. Processing duration and performance are directly dependent on your client device CPU specifications, available RAM, and browser environment.
+              </p>
+              <h4 className="font-bold text-indigo-300 text-sm">4. Disclaimer of Warranties & Limitation of Liability</h4>
+              <p>
+                The service is provided on an "AS IS" and "AS AVAILABLE" basis without warranties of any kind, express or implied. Under no circumstances shall VidFlash.in, its founders, or maintainers be liable for any indirect, incidental, or consequential damages resulting from platform usage or data loss.
               </p>
             </>
           )}
@@ -249,15 +357,15 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
           {type === "contact" && (
             <>
               <p>
-                Have questions, feature requests, or bug reports regarding VidFlash Matrix? We are here to help!
+                Have questions, feature requests, or technical inquiries regarding VidFlash.in? We are here to support your creator journey!
               </p>
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
                 <div className="flex items-center space-x-2 text-slate-200 font-semibold">
                   <Mail className="w-4 h-4 text-indigo-400" />
-                  <span>Support Email: support@vidflash.in</span>
+                  <span>Support Email: <a href="mailto:somitrov@gmail.com" className="text-indigo-300 underline">somitrov@gmail.com</a></span>
                 </div>
                 <p className="text-slate-400 text-xs">
-                  We respond to technical inquiries and feedback within 24-48 business hours.
+                  We respond to creator inquiries, bug reports, and partnership proposals within 24-48 business hours.
                 </p>
               </div>
             </>

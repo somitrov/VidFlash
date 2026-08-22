@@ -65,7 +65,7 @@ export async function processAudioToVideo({
   onLog,
   onProgress,
 }: {
-  mediaFile: File;
+  mediaFile: File | Blob;
   canvasDataUrl: string;
   frameSequenceDataUrls?: string[];
   duration: number;
@@ -104,7 +104,8 @@ export async function processAudioToVideo({
   }
 
   // Write Media File to Virtual FS
-  const fileExt = mediaFile.name.split(".").pop()?.toLowerCase() || "mp3";
+  const fileName = "name" in mediaFile ? (mediaFile as File).name : "audio.wav";
+  const fileExt = fileName.split(".").pop()?.toLowerCase() || "wav";
   const mediaInputName = `input_media.${fileExt}`;
   const mediaData = await fetchFile(mediaFile);
   await ffmpeg.writeFile(mediaInputName, mediaData);

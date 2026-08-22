@@ -7,18 +7,32 @@
 :root {
   --background: #030712;
   --foreground: #f8fafc;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Segoe UI Mono", Consolas, monospace;
+}
+
+/* Caption font — matching AutoEditor */
+@font-face {
+  font-family: "CaptionFont";
+  src: url("/fonts/caption.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-open-sans), 'Open Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   min-height: 100vh;
   overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading {
-  font-family: var(--font-poppins), 'Poppins', sans-serif;
+  font-family: var(--font-ui);
+}
+
+.font-mono, code, pre {
+  font-family: var(--font-mono);
 }
 
 /* Custom Scrollbar */
