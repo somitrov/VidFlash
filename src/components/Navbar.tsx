@@ -45,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
             <p className="text-xs font-semibold font-openSans text-slate-400 hidden sm:block">
-              Productions on Flash!
+              Videos on Flash!
             </p>
           </div>
         </button>

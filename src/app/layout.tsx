@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL("https://vidflash.in"),
   title: {
-    default: "VidFlash - Video Productions on Flash!",
+    default: "VidFlash - Videos on Flash!",
     template: "%s | VidFlash",
   },
   description:
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     canonical: "https://vidflash.in",
   },
   openGraph: {
-    title: "VidFlash - Video Productions on Flash!",
+    title: "VidFlash - Videos on Flash!",
     description:
       "Auto-sync images to voiceovers with AutoEditor and convert audiobooks to YouTube MP4s with VidMaker locally in your browser. 100% free and private.",
     url: "https://vidflash.in",
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "VidFlash - Video Productions on Flash!",
+    title: "VidFlash - Videos on Flash!",
     description:
       "Automated video editing and in-browser audiobook to YouTube MP4 conversion suite with zero server uploads.",
     images: ["/icon-512.png"],

@@ -28,6 +28,7 @@ import {
   MotionEffect,
   TransitionEffect,
   StudioSettings,
+  RenderProfileTier,
 } from "@/types/autoeditor";
 import { StudioMediaPanel } from "./StudioMediaPanel";
 import { StudioPreview } from "./StudioPreview";
@@ -41,6 +42,35 @@ import {
 import { sortClipsByTimestamp, formatSecondsToTimecode } from "@/lib/engine/timestampParser";
 import { exportVideoClientSide } from "@/lib/engine/videoExporter";
 import { playAudioSfx } from "@/lib/engine/sfxEngine";
+
+export function computeResolution(
+  profile: RenderProfileTier,
+  ratio: AspectRatioPreset
+): ResolutionDimensions {
+  switch (profile) {
+    case "low-720p":
+      if (ratio === "9:16") return { width: 720, height: 1280 };
+      if (ratio === "1:1") return { width: 720, height: 720 };
+      return { width: 1280, height: 720 };
+
+    case "balanced-1080p":
+    case "high-1080p":
+    default:
+      if (ratio === "9:16") return { width: 1080, height: 1920 };
+      if (ratio === "1:1") return { width: 1080, height: 1080 };
+      return { width: 1920, height: 1080 };
+
+    case "2k-1440p":
+      if (ratio === "9:16") return { width: 1440, height: 2560 };
+      if (ratio === "1:1") return { width: 1440, height: 1440 };
+      return { width: 2560, height: 1440 };
+
+    case "4k-2160p":
+      if (ratio === "9:16") return { width: 2160, height: 3840 };
+      if (ratio === "1:1") return { width: 2160, height: 2160 };
+      return { width: 3840, height: 2160 };
+  }
+}
 
 const ALL_TRANSITIONS: TransitionEffect[] = [
   "crossfade",
@@ -106,6 +136,7 @@ export function VidFlashAutoEditor({
     randomTransitions: true,
     selectedTransition: undefined,
     fps: 30,
+    renderProfile: "balanced-1080p",
     qualityPreset: "optimized",
     hardwareProfile: "balanced",
     enableSfx: true,
@@ -191,7 +222,7 @@ export function VidFlashAutoEditor({
 
       // Update BGM volume if auto-ducking is enabled
       if (bgmElementRef.current && bgmTrack) {
-        const effectiveVol = bgmTrack.autoDucking ? (bgmTrack.duckedVolume ?? 0.18) : bgmTrack.volume;
+        const effectiveVol = bgmTrack.autoDucking ? bgmTrack.volume * 0.5 : bgmTrack.volume;
         bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
       }
     } catch (err) {
@@ -209,7 +240,7 @@ export function VidFlashAutoEditor({
       audioElementRef.current.src = "";
     }
     if (bgmElementRef.current && bgmTrack) {
-      bgmElementRef.current.volume = bgmTrack.volume;
+      bgmElementRef.current.volume = Math.max(0, Math.min(1, bgmTrack.volume));
     }
   };
 
@@ -223,14 +254,14 @@ export function VidFlashAutoEditor({
         durationSec: decoded.durationSec,
         audioBuffer: decoded.audioBuffer,
         audioUrl: decoded.audioUrl,
-        volume: 0.35,
+        volume: 0.5, // 50% Default
         autoDucking: true,
-        duckedVolume: 0.18,
+        duckedVolume: 0.25, // 50% * 0.5
       };
       setBgmTrack(newBgm);
       if (bgmElementRef.current && decoded.audioUrl) {
         bgmElementRef.current.src = decoded.audioUrl;
-        const effectiveVol = newBgm.autoDucking && audioTrack ? (newBgm.duckedVolume ?? 0.18) : newBgm.volume;
+        const effectiveVol = newBgm.autoDucking && audioTrack ? newBgm.volume * 0.5 : newBgm.volume;
         bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
         bgmElementRef.current.load();
       }
@@ -254,8 +285,11 @@ export function VidFlashAutoEditor({
     setBgmTrack((prev) => {
       if (!prev) return null;
       const next = { ...prev, ...updates };
+      if (typeof updates.volume === "number") {
+        next.duckedVolume = updates.volume * 0.5;
+      }
       if (bgmElementRef.current) {
-        const effectiveVol = next.autoDucking && audioTrack ? (next.duckedVolume ?? 0.18) : next.volume;
+        const effectiveVol = next.autoDucking && audioTrack ? next.volume * 0.5 : next.volume;
         bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
       }
       return next;
@@ -316,13 +350,7 @@ export function VidFlashAutoEditor({
   // Handle Aspect Ratio Change
   const handleChangeAspectRatio = (ratio: AspectRatioPreset) => {
     setAspectRatio(ratio);
-    if (ratio === "16:9") {
-      setResolution({ width: 1920, height: 1080 });
-    } else if (ratio === "9:16") {
-      setResolution({ width: 1080, height: 1920 });
-    } else {
-      setResolution({ width: 1080, height: 1080 });
-    }
+    setResolution(computeResolution(studioSettings.renderProfile || "balanced-1080p", ratio));
   };
 
   // Handle Settings Update
@@ -387,7 +415,7 @@ export function VidFlashAutoEditor({
           }
           const effectiveVol =
             bgmTrack.autoDucking && audioTrack
-              ? (bgmTrack.duckedVolume ?? 0.18)
+              ? bgmTrack.volume * 0.5
               : bgmTrack.volume;
           bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
           const playPromise = bgmElementRef.current.play();
@@ -539,7 +567,7 @@ export function VidFlashAutoEditor({
         resolution,
         fps: studioSettings.fps,
         format: "mp4",
-        qualityPreset: studioSettings.qualityPreset || "optimized",
+        renderProfile: studioSettings.renderProfile || "balanced-1080p",
         hardwareProfile: studioSettings.hardwareProfile || "balanced",
         fadeInSec: studioSettings.fadeInSec,
         fadeOutSec: studioSettings.fadeOutSec,
@@ -588,7 +616,7 @@ export function VidFlashAutoEditor({
       console.error("Export failed:", err);
       setExportError(err instanceof Error ? err.message : "Video export failed");
       if (typeof document !== "undefined") {
-        document.title = "VidFlash - Productions on Flash!";
+        document.title = "VidFlash - Videos on Flash!";
       }
     } finally {
       abortControllerRef.current = null;
@@ -623,7 +651,7 @@ export function VidFlashAutoEditor({
     setExportError(null);
     setExportProgress(0);
     if (typeof document !== "undefined") {
-      document.title = "VidFlash - Productions on Flash!";
+      document.title = "VidFlash - Videos on Flash!";
     }
   };
 
@@ -1003,7 +1031,44 @@ export function VidFlashAutoEditor({
             </div>
 
             {/* Settings Body */}
-            <div className="space-y-3.5 text-xs">
+            <div className="space-y-4 text-xs">
+              {/* Profile Selector: Resolution & Hardware Power Allocation */}
+              <div>
+                <label className="text-[11px] text-slate-300 font-semibold block mb-1.5">
+                  Resolution & Hardware Power Allocation
+                </label>
+                <select
+                  value={studioSettings.renderProfile || "balanced-1080p"}
+                  onChange={(e) => {
+                    const newProfile = e.target.value as RenderProfileTier;
+                    setStudioSettings((prev) => ({
+                      ...prev,
+                      renderProfile: newProfile,
+                    }));
+                    setResolution(computeResolution(newProfile, aspectRatio));
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer"
+                >
+                  <option value="low-720p">🍃 Low — 720p HD (Lightweight Power • 40% CPU / 60% RAM)</option>
+                  <option value="balanced-1080p">⚡ Balanced — 1080p Full HD (Recommended • 60% CPU / 80% RAM)</option>
+                  <option value="high-1080p">🚀 High — 1080p Turbo Pro (Full PC Power • 100% CPU / 100% RAM)</option>
+                  <option value="2k-1440p">💎 2K QHD — 1440p Master (High-End PC Only • 100% Power)</option>
+                  <option value="4k-2160p">👑 4K UHD — 2160p Cinema Master (Flagship High-End PC • 100% Power)</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {studioSettings.renderProfile === "low-720p" &&
+                    "Uncompromised crisp 720p HD. Best for lightweight or older PCs without high CPU usage."}
+                  {(studioSettings.renderProfile === "balanced-1080p" || !studioSettings.renderProfile) &&
+                    "Pristine 1080p crystal-clear clarity while keeping your PC completely responsive for multitasking."}
+                  {studioSettings.renderProfile === "high-1080p" &&
+                    "Studio Master uncompromised 1080p rendering utilizing full PC horsepower at maximum rendering speed."}
+                  {studioSettings.renderProfile === "2k-1440p" &&
+                    "Ultra-sharp 2560×1440 creator fidelity. Recommended for high-spec creator workstations."}
+                  {studioSettings.renderProfile === "4k-2160p" &&
+                    "Ultra-fidelity 3840×2160 cinema mastering. Recommended for flagship creator PCs."}
+                </p>
+              </div>
+
               {/* Aspect Ratio & FPS */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1013,11 +1078,11 @@ export function VidFlashAutoEditor({
                   <select
                     value={aspectRatio}
                     onChange={(e) => handleChangeAspectRatio(e.target.value as AspectRatioPreset)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer"
                   >
-                    <option value="16:9">16:9 — 1920x1080 (YouTube/Desktop)</option>
-                    <option value="9:16">9:16 — 1080x1920 (Reels/Shorts)</option>
-                    <option value="1:1">1:1 — 1080x1080 (Square)</option>
+                    <option value="16:9">16:9 (Landscape / YouTube / Desktop)</option>
+                    <option value="9:16">9:16 (Vertical / Shorts / Reels / TikTok)</option>
+                    <option value="1:1">1:1 (Square / Instagram / Post)</option>
                   </select>
                 </div>
 
@@ -1033,7 +1098,7 @@ export function VidFlashAutoEditor({
                         fps: parseInt(e.target.value, 10) as 24 | 30 | 60,
                       }))
                     }
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500 font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500 font-mono cursor-pointer"
                   >
                     <option value="24">24 fps (Cinematic Film)</option>
                     <option value="30">30 fps (Standard Web)</option>
@@ -1042,61 +1107,45 @@ export function VidFlashAutoEditor({
                 </div>
               </div>
 
-              {/* Bitrate Compression Preset */}
-              <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1">
-                  Bitrate Compression Preset
-                </label>
-                <select
-                  value={studioSettings.qualityPreset || "optimized"}
-                  onChange={(e) =>
-                    setStudioSettings((prev) => ({
-                      ...prev,
-                      qualityPreset: e.target.value as "optimized" | "high" | "compact",
-                    }))
-                  }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="optimized">⚡ Optimized Web & YouTube (~16 MB/min)</option>
-                  <option value="compact">📱 Ultra Compact / Low Data (~9 MB/min)</option>
-                  <option value="high">🎬 Studio High Fidelity (~33 MB/min)</option>
-                </select>
-              </div>
-
-              {/* Hardware Power Governor Allocation */}
-              <div>
-                <label className="text-[11px] text-slate-300 font-semibold block mb-1">
-                  Hardware Power Allocation
-                </label>
-                <select
-                  value={studioSettings.hardwareProfile || "balanced"}
-                  onChange={(e) =>
-                    setStudioSettings((prev) => ({
-                      ...prev,
-                      hardwareProfile: e.target.value as any,
-                    }))
-                  }
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 text-xs font-semibold focus:outline-none focus:border-indigo-500 font-mono"
-                >
-                  <option value="balanced">⚡ 60% CPU • 80% RAM • 100% GPU (Balanced)</option>
-                  <option value="turbo">🚀 100% CPU • 100% RAM • 100% GPU (Max Turbo)</option>
-                  <option value="silent">🍃 40% CPU • 50% RAM • 100% GPU (Silent)</option>
-                </select>
-              </div>
-
               {/* Summary Specs */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-1.5 text-xs font-mono">
-                <div className="flex justify-between text-slate-400">
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800/90 space-y-2 text-xs font-mono">
+                <div className="flex justify-between items-center text-slate-400">
                   <span>Target Resolution</span>
-                  <span className="text-slate-200 font-bold">{resolution.width}×{resolution.height}</span>
+                  <span className="text-white font-bold bg-indigo-950/80 border border-indigo-500/30 px-2 py-0.5 rounded text-[11px]">
+                    {resolution.width} × {resolution.height} ({aspectRatio})
+                  </span>
                 </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Clips Ingested</span>
-                  <span className="text-slate-200 font-bold">{timelineClips.length} clips</span>
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>Quality Fidelity</span>
+                  <span className="text-emerald-400 font-bold">
+                    {studioSettings.renderProfile === "low-720p"
+                      ? "Uncompromised 720p HD (~7.5 Mbps)"
+                      : studioSettings.renderProfile === "high-1080p"
+                      ? "Studio Master 1080p Turbo (~18 Mbps)"
+                      : studioSettings.renderProfile === "2k-1440p"
+                      ? "Razor-Sharp 2K Master (~28 Mbps)"
+                      : studioSettings.renderProfile === "4k-2160p"
+                      ? "Cinema Master 4K UHD (~50 Mbps)"
+                      : "Pristine 1080p Full HD (~14 Mbps)"}
+                  </span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>Power Allocation</span>
+                  <span className="text-slate-300 font-medium">
+                    {studioSettings.renderProfile === "low-720p"
+                      ? "40% CPU • 60% RAM • 100% GPU"
+                      : studioSettings.renderProfile === "balanced-1080p" || !studioSettings.renderProfile
+                      ? "60% CPU • 80% RAM • 100% GPU"
+                      : "100% CPU • 100% RAM • 100% GPU"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-slate-400 pt-1 border-t border-slate-800/70">
                   <span>Master Timeline Duration</span>
                   <span className="text-emerald-400 font-bold">{formatSecondsToTimecode(totalDurationSec)}</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-400">
+                  <span>Clips Ingested</span>
+                  <span className="text-slate-200 font-bold">{timelineClips.length} clips</span>
                 </div>
               </div>
 

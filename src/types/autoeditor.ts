@@ -38,14 +38,22 @@ export type TransitionEffect =
 
 export type HardwareProfile = "balanced" | "turbo" | "silent";
 
+export type RenderProfileTier =
+  | "low-720p"
+  | "balanced-1080p"
+  | "high-1080p"
+  | "2k-1440p"
+  | "4k-2160p";
+
 export interface StudioSettings {
   fadeInSec: number;
   fadeOutSec: number;
   randomTransitions: boolean;
   selectedTransition?: TransitionEffect;
   fps: 24 | 30 | 60;
-  qualityPreset: "optimized" | "high" | "compact";
-  hardwareProfile: HardwareProfile;
+  renderProfile: RenderProfileTier;
+  qualityPreset?: "optimized" | "high" | "compact";
+  hardwareProfile?: HardwareProfile;
   enableSfx: boolean;
   selectedSfxId?: string;
   enableParticles: boolean;
@@ -135,6 +143,7 @@ export interface ExportConfig {
   resolution: ResolutionDimensions;
   fps: 24 | 30 | 60;
   format: "mp4" | "webm";
+  renderProfile?: RenderProfileTier;
   qualityPreset?: "optimized" | "high" | "compact";
   hardwareProfile?: HardwareProfile;
   fadeInSec?: number;

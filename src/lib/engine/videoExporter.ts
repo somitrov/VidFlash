@@ -40,15 +40,29 @@ export async function exportVideoClientSide({
   const width = config.resolution.width;
   const height = config.resolution.height;
   const fps = config.fps || 30;
-  const profile = config.hardwareProfile || "balanced"; // "balanced" = 60% CPU, 80% RAM, 100% GPU
+  
+  // Hardware Profile based on Render Tier
+  const profile = config.hardwareProfile || (
+    config.renderProfile === "low-720p"
+      ? "silent"
+      : config.renderProfile === "balanced-1080p"
+      ? "balanced"
+      : "turbo"
+  );
 
-  // Target Bitrates optimized for crisp visuals + compact sizes
-  const videoBitsPerSecond =
-    config.qualityPreset === "high"
-      ? 4_500_000
-      : config.qualityPreset === "compact"
-      ? 1_200_000
-      : 2_500_000;
+  // Uncompromised Bitrate Allocations for True Studio-Grade Visual Quality
+  let videoBitsPerSecond = 14_000_000; // Default 14 Mbps (1080p FHD)
+  if (config.renderProfile === "low-720p" || (width <= 1280 && height <= 720)) {
+    videoBitsPerSecond = 7_500_000; // 7.5 Mbps (Crisp 720p HD)
+  } else if (config.renderProfile === "balanced-1080p") {
+    videoBitsPerSecond = 14_000_000; // 14 Mbps (Pristine 1080p FHD)
+  } else if (config.renderProfile === "high-1080p") {
+    videoBitsPerSecond = 18_000_000; // 18 Mbps (Studio Master 1080p Turbo)
+  } else if (config.renderProfile === "2k-1440p" || (width >= 2560 || height >= 2560)) {
+    videoBitsPerSecond = 28_000_000; // 28 Mbps (Razor-Sharp 2K QHD)
+  } else if (config.renderProfile === "4k-2160p" || (width >= 3840 || height >= 3840)) {
+    videoBitsPerSecond = 50_000_000; // 50 Mbps (Cinema Master 4K UHD)
+  }
 
   // Offscreen Canvas for GPU 2D acceleration
   const offscreenCanvas = document.createElement("canvas");
@@ -61,6 +75,8 @@ export async function exportVideoClientSide({
   if (!ctx) {
     throw new Error("Unable to create hardware-accelerated 2D canvas context");
   }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   // Calculate master duration
   const totalDuration = audioTrack
@@ -113,9 +129,9 @@ export async function exportVideoClientSide({
     const bgmGain = audioContext.createGain();
     const effectiveBgmVolume =
       bgmTrack.autoDucking && audioTrack
-        ? (bgmTrack.duckedVolume ?? 0.18)
-        : (bgmTrack.volume ?? 0.35);
-    bgmGain.gain.value = effectiveBgmVolume;
+        ? (bgmTrack.volume ?? 0.5) * 0.5
+        : (bgmTrack.volume ?? 0.5);
+    bgmGain.gain.value = Math.max(0, Math.min(1, effectiveBgmVolume));
     bgmSource.connect(bgmGain);
     bgmGain.connect(audioDest);
   }

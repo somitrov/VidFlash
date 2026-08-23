@@ -558,26 +558,43 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                     </div>
 
                     {/* BGM Volume Level Slider */}
-                    <div className="space-y-1 pt-1">
+                    <div className="space-y-1.5 pt-1">
                       <div className="flex justify-between text-[11px] text-slate-300">
-                        <span>BGM Background Level</span>
-                        <span className="font-mono text-teal-400 font-bold">
-                          {Math.round(bgmTrack.volume * 100)}%
-                          {bgmTrack.autoDucking ? " (Ducked on speech)" : ""}
-                        </span>
+                        <span>BGM Master Volume</span>
+                        <div className="flex items-center space-x-1.5 font-mono text-xs">
+                          <span className="text-teal-300 font-bold">
+                            {Math.round(bgmTrack.volume * 100)}%
+                          </span>
+                          {bgmTrack.autoDucking ? (
+                            <span className="text-[10px] text-teal-400/80 font-semibold">
+                              (Ducks to {Math.round(bgmTrack.volume * 50)}% on voice)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-500">
+                              (Fixed)
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <input
-                        type="range"
-                        min="0.05"
-                        max="1.0"
-                        step="0.05"
-                        value={bgmTrack.volume}
-                        onChange={(e) =>
-                          onUpdateBgm &&
-                          onUpdateBgm({ volume: parseFloat(e.target.value) })
-                        }
-                        className="w-full accent-teal-500 h-1.5 bg-[#121215] rounded-lg cursor-pointer"
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Volume2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={bgmTrack.volume}
+                          onInput={(e) =>
+                            onUpdateBgm &&
+                            onUpdateBgm({ volume: parseFloat((e.target as HTMLInputElement).value) })
+                          }
+                          onChange={(e) =>
+                            onUpdateBgm &&
+                            onUpdateBgm({ volume: parseFloat(e.target.value) })
+                          }
+                          className="w-full accent-teal-400 h-2 bg-[#1c1c24] rounded-lg cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

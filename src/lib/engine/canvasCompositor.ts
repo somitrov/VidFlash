@@ -58,6 +58,8 @@ export function renderCompositorFrame({
 }) {
   // 1. Base dark stage
   ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.fillStyle = "#020617";
   ctx.fillRect(0, 0, width, height);
 
@@ -914,6 +916,8 @@ function renderSingleClip(
 ) {
   if (alpha <= 0.001) return;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   if (filterStr && filterStr !== "none") {
     ctx.filter = filterStr;
   }
