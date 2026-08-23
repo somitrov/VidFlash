@@ -672,14 +672,16 @@ export function VidFlashAutoEditor({
             AutoEditor
           </span>
           <span className="text-slate-600 hidden sm:inline">•</span>
-          <button
-            onClick={() => setIsExtensionModalOpen(true)}
+          <a
+            href="https://aiawaaz.io/?ref=Kickmug"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 hover:underline transition-all cursor-pointer group"
-            title="Open Flow Automator Extension Setup Guide"
+            title="Get AiAwaaz! - AI Voiceover Engine"
           >
-            <span>Get the Extension</span>
+            <span>Get AiAwaaz!</span>
             <ExternalLink className="w-3 h-3 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
-          </button>
+          </a>
         </div>
 
         {/* Place 2: Flow Automator Extension Button */}
