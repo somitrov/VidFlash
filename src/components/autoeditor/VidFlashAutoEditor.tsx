@@ -1245,11 +1245,22 @@ export function VidFlashAutoEditor({
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-400">
-                <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
-                  <span className="text-emerald-400 font-bold text-[11px] block">1. Install Extension</span>
-                  <p className="text-[11px] leading-relaxed">
-                    Install the <strong>TryAIToday Flow Automator</strong> extension from the official Chrome Web Store.
-                  </p>
+                <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex flex-col justify-between space-y-2.5">
+                  <div className="space-y-1">
+                    <span className="text-emerald-400 font-bold text-[11px] block">1. Install Extension</span>
+                    <p className="text-[11px] leading-relaxed">
+                      Install the <strong>TryAIToday Flow Automator</strong> extension from the Chrome Web Store.
+                    </p>
+                  </div>
+                  <a
+                    href="/AutoEditor_MasterPrompts.txt"
+                    download="AutoEditor_MasterPrompts.txt"
+                    className="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/35 text-emerald-300 hover:text-emerald-200 text-[11px] font-bold transition-all group shadow-sm shadow-emerald-500/10 cursor-pointer"
+                    title="Download Master Prompt for Claude & Flow (.txt)"
+                  >
+                    <Download className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+                    <span>Get Masterprompt (.txt)</span>
+                  </a>
                 </div>
 
                 <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 space-y-1">
