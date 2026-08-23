@@ -248,6 +248,10 @@ export async function exportVideoClientSide({
       reject(err);
     };
 
+    // Record exact anchor start time from WebAudio Context
+    const renderStartAudioTime = audioContext.currentTime;
+    const renderStartPerfTime = performance.now();
+
     recorder.start(5000); // 5s chunk slices for RAM guard
     if (audioSource) {
       audioSource.start(0);
@@ -257,23 +261,31 @@ export async function exportVideoClientSide({
     }
 
     const frameDurationSec = 1 / fps;
-    const targetFrameIntervalMs = 1000 / fps;
-    let currentSec = 0;
+    let frameCount = 0;
     let isFinished = false;
 
     const renderNextFrame = () => {
       if (isFinished || isAborted || signal?.aborted) return;
 
-      if (currentSec >= totalDuration) {
+      // Master Clock Lock: Derive exact playhead directly from WebAudio hardware clock
+      const elapsedSec = (audioSource || bgmSource)
+        ? Math.max(0, audioContext.currentTime - renderStartAudioTime)
+        : (performance.now() - renderStartPerfTime) / 1000;
+
+      const currentSec = Math.min(totalDuration, elapsedSec);
+
+      if (elapsedSec >= totalDuration) {
         isFinished = true;
         worker.postMessage({ action: "stop" });
-        recorder.stop();
+        try {
+          if (recorder.state !== "inactive") {
+            recorder.stop();
+          }
+        } catch {}
         return;
       }
 
-      const frameStartTime = performance.now();
-
-      // Render Composite Frame on GPU
+      // Render Composite Frame on GPU at exact real-time audio synchronization
       renderCompositorFrame({
         ctx,
         width,
@@ -297,26 +309,17 @@ export async function exportVideoClientSide({
         enableVintageSepia: config.enableVintageSepia ?? false,
       });
 
-      const frameComputeTime = performance.now() - frameStartTime;
-
-      currentSec += frameDurationSec;
+      frameCount++;
       const progressPercent = Math.min(
         100,
         Math.round((currentSec / totalDuration) * 100)
       );
       onProgress(progressPercent, currentSec);
 
-      // 60% CPU Power Governor: Adaptive duty-cycle delay
-      // Calculates exact sleep to maintain ~60% CPU utilization
-      let nextDelayMs = Math.max(
-        1,
-        targetFrameIntervalMs - frameComputeTime
-      );
-
-      if (cpuYieldRatio > 0) {
-        const requiredYieldMs = frameComputeTime * cpuYieldRatio;
-        nextDelayMs = Math.max(nextDelayMs, requiredYieldMs);
-      }
+      // Target Next Frame schedule based on desired FPS
+      const targetNextSec = frameCount * frameDurationSec;
+      const remainingTimeToNextFrameSec = targetNextSec - elapsedSec;
+      const nextDelayMs = Math.max(2, Math.min(100, remainingTimeToNextFrameSec * 1000));
 
       worker.postMessage({
         action: "schedule",
