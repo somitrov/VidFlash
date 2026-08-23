@@ -10,6 +10,7 @@ import { VidFlashAutoEditor } from "@/components/autoeditor/VidFlashAutoEditor";
 export default function Home() {
   const [mode, setMode] = useState<"gateway" | "vidflash" | "audiobook">("gateway");
   const [legalModalType, setLegalModalType] = useState<"privacy" | "terms" | "contact" | "sale" | null>(null);
+  const [isRenderSettingsOpen, setIsRenderSettingsOpen] = useState<boolean>(false);
 
   const faqRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +31,12 @@ export default function Home() {
         onOpenLegal={(type) => setLegalModalType(type)}
         onScrollToFAQ={scrollToFAQ}
         onGoHome={() => setMode("gateway")}
+        onOpenRenderSettings={() => {
+          if (mode !== "audiobook") {
+            setMode("audiobook");
+          }
+          setIsRenderSettingsOpen(true);
+        }}
       />
 
       {/* Main Content Area */}
@@ -110,7 +117,11 @@ export default function Home() {
               </button>
             </div>
             <div className="w-full">
-              <VidFlashAutoEditor />
+              <VidFlashAutoEditor
+                isRenderSettingsOpen={isRenderSettingsOpen}
+                onCloseRenderSettings={() => setIsRenderSettingsOpen(false)}
+                onOpenRenderSettings={() => setIsRenderSettingsOpen(true)}
+              />
             </div>
           </div>
         )}
@@ -162,10 +173,14 @@ export default function Home() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <span className="flex items-center space-x-1">
+            <button
+              onClick={() => setLegalModalType("sale")}
+              className="flex items-center space-x-1.5 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+              title="View On Sale Details"
+            >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Zero-Server Privacy</span>
-            </span>
+              <span>On Sale</span>
+            </button>
           </div>
         </div>
       </footer>

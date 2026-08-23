@@ -55,10 +55,9 @@ interface StudioControlSidebarProps {
   onStartRender: () => void;
 }
 
-type InspectorTab = "export" | "video" | "transitions" | "captions" | "audio" | "effects";
+type InspectorTab = "video" | "audio" | "transitions" | "captions" | "effects";
 
 const TRANSITION_OPTIONS: { id: TransitionEffect; label: string; icon: string; category?: string }[] = [
-  { id: "cut", label: "None / Hard Cut", icon: "⊘" },
   { id: "crossfade", label: "Crossfade Dissolve", icon: "✦" },
   { id: "light-leak", label: "Light Leak & Flare", icon: "☀️" },
   { id: "glow-flash", label: "Optical Bloom Flash", icon: "✨" },
@@ -99,7 +98,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
   onShuffleTransitions,
   onStartRender,
 }) => {
-  const [activeTab, setActiveTab] = useState<InspectorTab>("export");
+  const [activeTab, setActiveTab] = useState<InspectorTab>("video");
   const scriptInputRef = useRef<HTMLInputElement>(null);
 
   const activeSfxId = settings.selectedSfxId || "clean-fast-swoosh";
@@ -120,12 +119,12 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 
   return (
     <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl flex flex-col h-[520px]">
-      {/* DaVinci Inspector Top Bar */}
+      {/* Video Settings Top Bar */}
       <div className="bg-[#121215] border-b border-[#2b2b36] px-3 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-red-500" />
+          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
-            Inspector
+            Video Settings
           </span>
         </div>
 
@@ -136,23 +135,12 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 
       {/* DaVinci Resolve Tab Navigation Header */}
       <div className="flex items-center border-b border-[#2b2b36] bg-[#141418] px-1 overflow-x-auto scrollbar-none text-[11px]">
-        <button
-          onClick={() => setActiveTab("export")}
-          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
-            activeTab === "export"
-              ? "border-red-500 text-white bg-[#1f1f26]"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span>Render</span>
-        </button>
-
+        {/* Tab 1: Video */}
         <button
           onClick={() => setActiveTab("video")}
           className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
             activeTab === "video"
-              ? "border-red-500 text-white bg-[#1f1f26]"
+              ? "border-indigo-500 text-white bg-[#1f1f26]"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -160,35 +148,12 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
           <span>Video</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab("transitions")}
-          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
-            activeTab === "transitions"
-              ? "border-red-500 text-white bg-[#1f1f26]"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <Shuffle className="w-3.5 h-3.5 text-purple-400" />
-          <span>Transitions</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("captions")}
-          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
-            activeTab === "captions"
-              ? "border-red-500 text-white bg-[#1f1f26]"
-              : "border-transparent text-slate-400 hover:text-slate-200"
-          }`}
-        >
-          <Type className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Captions</span>
-        </button>
-
+        {/* Tab 2: Audio SFX */}
         <button
           onClick={() => setActiveTab("audio")}
           className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
             activeTab === "audio"
-              ? "border-red-500 text-white bg-[#1f1f26]"
+              ? "border-teal-500 text-white bg-[#1f1f26]"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -196,11 +161,38 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
           <span>Audio SFX</span>
         </button>
 
+        {/* Tab 3: Transitions */}
+        <button
+          onClick={() => setActiveTab("transitions")}
+          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
+            activeTab === "transitions"
+              ? "border-purple-500 text-white bg-[#1f1f26]"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Shuffle className="w-3.5 h-3.5 text-purple-400" />
+          <span>Transitions</span>
+        </button>
+
+        {/* Tab 4: Captions */}
+        <button
+          onClick={() => setActiveTab("captions")}
+          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
+            activeTab === "captions"
+              ? "border-emerald-500 text-white bg-[#1f1f26]"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Type className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Captions</span>
+        </button>
+
+        {/* Tab 5: Effects */}
         <button
           onClick={() => setActiveTab("effects")}
           className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
             activeTab === "effects"
-              ? "border-red-500 text-white bg-[#1f1f26]"
+              ? "border-pink-500 text-white bg-[#1f1f26]"
               : "border-transparent text-slate-400 hover:text-slate-200"
           }`}
         >
@@ -211,123 +203,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 
       {/* DaVinci Inspector Body Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
-        {/* TAB 1: RENDER & EXPORT */}
-        {activeTab === "export" && (
-          <div className="space-y-4">
-            <div className="space-y-3">
-              {/* Aspect Ratio & FPS */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block mb-1">
-                    Timeline Format
-                  </label>
-                  <select
-                    value={aspectRatio}
-                    onChange={(e) => onChangeAspectRatio(e.target.value as AspectRatioPreset)}
-                    className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-1.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-red-500"
-                  >
-                    <option value="16:9">16:9 — 1920x1080</option>
-                    <option value="9:16">9:16 — 1080x1920</option>
-                    <option value="1:1">1:1 — 1080x1080</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[10px] text-slate-400 font-semibold block mb-1">
-                    Frame Rate (FPS)
-                  </label>
-                  <select
-                    value={settings.fps}
-                    onChange={(e) =>
-                      onUpdateSettings({
-                        fps: parseInt(e.target.value, 10) as 24 | 30 | 60,
-                      })
-                    }
-                    className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-1.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-red-500 font-mono"
-                  >
-                    <option value="24">24 fps (Cinematic)</option>
-                    <option value="30">30 fps (Standard)</option>
-                    <option value="60">60 fps (Ultra Smooth)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Compression & Quality Preset */}
-              <div>
-                <label className="text-[10px] text-slate-400 font-semibold block mb-1">
-                  Bitrate Compression Preset
-                </label>
-                <select
-                  value={settings.qualityPreset || "optimized"}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      qualityPreset: e.target.value as "optimized" | "high" | "compact",
-                    })
-                  }
-                  className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-1.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-red-500"
-                >
-                  <option value="optimized">⚡ Optimized Web & YouTube (~16 MB/min)</option>
-                  <option value="compact">📱 Ultra Compact / Low Data (~9 MB/min)</option>
-                  <option value="high">🎬 Studio High Fidelity (~33 MB/min)</option>
-                </select>
-              </div>
-
-              {/* Hardware Power Governor */}
-              <div>
-                <label className="text-[10px] text-slate-400 font-semibold block mb-1">
-                  Hardware Power Allocation
-                </label>
-                <select
-                  value={settings.hardwareProfile || "balanced"}
-                  onChange={(e) =>
-                    onUpdateSettings({
-                      hardwareProfile: e.target.value as HardwareProfile,
-                    })
-                  }
-                  className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-1.5 text-slate-200 text-xs font-semibold focus:outline-none focus:border-red-500 font-mono"
-                >
-                  <option value="balanced">⚡ 60% CPU • 80% RAM • 100% GPU (Balanced)</option>
-                  <option value="turbo">🚀 100% CPU • 100% RAM • 100% GPU (Max Turbo)</option>
-                  <option value="silent">🍃 40% CPU • 50% RAM • 100% GPU (Silent)</option>
-                </select>
-              </div>
-
-              {/* Metadata Card */}
-              <div className="p-3 rounded-lg bg-[#121215] border border-[#2b2b36] space-y-1.5 text-[11px] font-mono">
-                <div className="flex justify-between text-slate-400">
-                  <span>Resolution</span>
-                  <span className="text-slate-200 font-bold">{resolution.width}×{resolution.height}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Clips Ingested</span>
-                  <span className="text-slate-200 font-bold">{clips.length}</span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Master Duration</span>
-                  <span className="text-emerald-400 font-bold">{formatSecondsToTimecode(totalDurationSec)}</span>
-                </div>
-              </div>
-
-              {/* Render Button */}
-              <button
-                onClick={onStartRender}
-                disabled={clips.length === 0 || isExporting}
-                className={`w-full py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-xl ${
-                  isExporting
-                    ? "bg-slate-800 text-slate-400 cursor-wait"
-                    : clips.length > 0
-                    ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-indigo-500/25 cursor-pointer transform hover:scale-[1.01]"
-                    : "bg-slate-800 text-slate-600 cursor-not-allowed opacity-50"
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>{isExporting ? `Rendering (${exportProgress}%)` : "Render MP4 Video"}</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: VIDEO & SCENE FADES */}
+        {/* TAB 1: VIDEO & SCENE FADES */}
         {activeTab === "video" && (
           <div className="space-y-4">
             <div className="space-y-3">
@@ -384,15 +260,26 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               </span>
               <button
                 onClick={() => {
-                  const next = !settings.randomTransitions;
-                  onUpdateSettings({ randomTransitions: next });
-                  if (next) onShuffleTransitions();
+                  if (settings.randomTransitions) {
+                    // Turn off random mix -> no transitions (clean cut)
+                    onUpdateSettings({ randomTransitions: false, selectedTransition: undefined });
+                    onApplyTransitionToAll("cut");
+                  } else {
+                    // Turn on random mix
+                    onUpdateSettings({ randomTransitions: true, selectedTransition: undefined });
+                    onShuffleTransitions();
+                  }
                 }}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-[10px] font-bold border transition-colors ${
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md text-[10px] font-bold border transition-colors cursor-pointer ${
                   settings.randomTransitions
-                    ? "bg-purple-950/80 border-purple-500 text-purple-300"
+                    ? "bg-purple-950/80 border-purple-500 text-purple-300 shadow-sm shadow-purple-500/20"
                     : "bg-[#121215] border-[#2b2b36] text-slate-400 hover:text-slate-200"
                 }`}
+                title={
+                  settings.randomTransitions
+                    ? "Random transitions active (click to disable all transitions)"
+                    : "Click to enable randomized transitions"
+                }
               >
                 <Shuffle className="w-3 h-3 text-purple-400" />
                 <span>Random mix</span>
@@ -401,20 +288,30 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 
             <div className="grid grid-cols-2 gap-1.5">
               {TRANSITION_OPTIONS.map((opt) => {
-                const isSelected = settings.selectedTransition === opt.id;
+                const isSelected = !settings.randomTransitions && settings.selectedTransition === opt.id;
                 return (
                   <button
                     key={opt.id}
                     onClick={() => {
-                      onUpdateSettings({
-                        selectedTransition: opt.id,
-                        randomTransitions: false,
-                      });
-                      onApplyTransitionToAll(opt.id);
+                      if (isSelected) {
+                        // Deselect on second click -> no transition (clean cut)
+                        onUpdateSettings({
+                          selectedTransition: undefined,
+                          randomTransitions: false,
+                        });
+                        onApplyTransitionToAll("cut");
+                      } else {
+                        // Select this transition
+                        onUpdateSettings({
+                          selectedTransition: opt.id,
+                          randomTransitions: false,
+                        });
+                        onApplyTransitionToAll(opt.id);
+                      }
                     }}
-                    className={`flex items-center space-x-2 px-2.5 py-2 rounded-lg text-xs font-medium border transition-all text-left ${
+                    className={`flex items-center space-x-2 px-2.5 py-2 rounded-lg text-xs font-medium border transition-all text-left cursor-pointer ${
                       isSelected
-                        ? "bg-indigo-600/30 border-indigo-500 text-indigo-200 shadow-sm"
+                        ? "bg-indigo-600/30 border-indigo-500 text-indigo-200 shadow-sm ring-1 ring-indigo-500/50"
                         : "bg-[#121215] border-[#2b2b36] hover:border-slate-700 text-slate-400 hover:text-slate-200"
                     }`}
                   >
@@ -498,88 +395,156 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
         )}
 
         {/* TAB 5: AUDIO SFX LIBRARY */}
-        {activeTab === "audio" && (
-          <div className="space-y-3.5">
-            <div className="flex items-center justify-between pb-2 border-b border-[#2b2b36]">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-200 block">
-                  Transition SFX
-                </span>
-                <span className="text-[10px] text-teal-400">
-                  Default: Fast Swoosh on every cut
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  const next = !settings.enableSfx;
-                  onUpdateSettings({ enableSfx: next });
-                  if (next) playAudioSfx(activeSfxId);
-                }}
-                className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                  settings.enableSfx ? "bg-teal-600" : "bg-slate-800"
-                }`}
-                title={settings.enableSfx ? "Disable Transition SFX" : "Enable Transition SFX"}
-              >
-                <div
-                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                    settings.enableSfx ? "translate-x-4" : "translate-x-0"
+        {activeTab === "audio" && (() => {
+          const isEnabled = settings.enableSfx && settings.selectedSfxId !== "none";
+          const isRandom = isEnabled && (!settings.selectedSfxId || settings.selectedSfxId === "random");
+          const selectedItem = SFX_LIBRARY.find((item) => item.id === settings.selectedSfxId);
+          const currentSelectValue = !isEnabled ? "none" : (settings.selectedSfxId || "random");
+
+          // Group sounds by category for clean dropdown
+          const swooshes = SFX_LIBRARY.filter((s) => s.category === "swoosh");
+          const actions = SFX_LIBRARY.filter((s) => s.category === "action");
+          const impacts = SFX_LIBRARY.filter((s) => s.category === "impact");
+          const uis = SFX_LIBRARY.filter((s) => s.category === "ui");
+
+          return (
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#2b2b36]">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200 block">
+                    Transition SFX
+                  </span>
+                  <span className="text-[10px] text-teal-400 font-medium">
+                    {!isEnabled
+                      ? "SFX Muted: No sounds on cuts"
+                      : isRandom
+                      ? "Default: Randomized SFX on every cut"
+                      : `Default: ${selectedItem?.name || "Selected SFX"} on every cut`}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    if (isEnabled) {
+                      onUpdateSettings({ enableSfx: false, selectedSfxId: "none" });
+                    } else {
+                      onUpdateSettings({ enableSfx: true, selectedSfxId: "random" });
+                      playAudioSfx("random");
+                    }
+                  }}
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer ${
+                    isEnabled ? "bg-teal-600 shadow-sm shadow-teal-500/30" : "bg-slate-800"
                   }`}
-                />
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] text-slate-400 font-semibold block">
-                Active Transition SFX
-              </label>
-              <select
-                value={activeSfxId}
-                onChange={(e) => {
-                  const sfxId = e.target.value;
-                  onUpdateSettings({ selectedSfxId: sfxId });
-                  playAudioSfx(sfxId);
-                }}
-                className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-1.5 text-teal-300 text-xs font-semibold focus:outline-none focus:border-teal-500"
-              >
-                {SFX_LIBRARY.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Categorized SFX Test & Select Grid */}
-            <div className="space-y-2 pt-1 border-t border-[#2b2b36]">
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                Sound Effects Library ({SFX_LIBRARY.length} Sounds)
+                  title={isEnabled ? "Disable Transition SFX" : "Enable Transition SFX"}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      isEnabled ? "translate-x-4" : "translate-x-0"
+                    }`}
+                  />
+                </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
-                {SFX_LIBRARY.map((item) => {
-                  const isSelected = activeSfxId === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        onUpdateSettings({ selectedSfxId: item.id });
-                        playAudioSfx(item.id);
-                      }}
-                      className={`flex items-center justify-between p-2 rounded-lg text-left text-xs border transition-all ${
-                        isSelected
-                          ? "bg-teal-950/80 border-teal-500 text-teal-200"
-                          : "bg-[#121215] border-[#2b2b36] text-slate-300 hover:border-slate-600"
-                      }`}
-                    >
-                      <span className="truncate text-[11px]">{item.name}</span>
-                      <Play className="w-3 h-3 text-teal-400 shrink-0 ml-1 fill-teal-400" />
-                    </button>
-                  );
-                })}
+              <div className="space-y-1.5">
+                <label className="text-[10px] text-slate-400 font-semibold block">
+                  Default Transition SFX
+                </label>
+                <select
+                  value={currentSelectValue}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "none") {
+                      onUpdateSettings({ enableSfx: false, selectedSfxId: "none" });
+                    } else if (val === "random") {
+                      onUpdateSettings({ enableSfx: true, selectedSfxId: "random" });
+                      playAudioSfx("random");
+                    } else {
+                      onUpdateSettings({ enableSfx: true, selectedSfxId: val });
+                      playAudioSfx(val);
+                    }
+                  }}
+                  className="w-full bg-[#121215] border border-[#2b2b36] rounded-lg px-2.5 py-2 text-teal-300 text-xs font-semibold focus:outline-none focus:border-teal-500 cursor-pointer"
+                >
+                  <option value="random">🎲 Random Mix (Default - Varied on Cuts)</option>
+                  <option value="none">⊘ None (Mute Transition Sounds)</option>
+                  <optgroup label="── Swooshes & Transitions ──">
+                    {swooshes.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="── Actions & Clicks ──">
+                    {actions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="── Impacts & Hits ──">
+                    {impacts.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="── UI & Chimes ──">
+                    {uis.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Categorized SFX Test & Select Grid */}
+              <div className="space-y-2 pt-1 border-t border-[#2b2b36]">
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                  <span>Sound Effects Library ({SFX_LIBRARY.length} Sounds)</span>
+                  {isRandom && isEnabled && (
+                    <span className="text-purple-400 font-bold lowercase bg-purple-950/70 border border-purple-500/30 px-1.5 py-0.5 rounded text-[9px]">
+                      🎲 random active
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-1 scrollbar-thin">
+                  {SFX_LIBRARY.map((item) => {
+                    const isSelected = isEnabled && settings.selectedSfxId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            // Toggle off specific sound -> revert to random mix
+                            onUpdateSettings({ enableSfx: true, selectedSfxId: "random" });
+                          } else {
+                            // Select this specific sound as default
+                            onUpdateSettings({ enableSfx: true, selectedSfxId: item.id });
+                            playAudioSfx(item.id);
+                          }
+                        }}
+                        className={`flex items-center justify-between p-2 rounded-lg text-left text-xs border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-teal-950/80 border-teal-500 text-teal-200 ring-1 ring-teal-500/40 shadow-sm"
+                            : "bg-[#121215] border-[#2b2b36] text-slate-300 hover:border-slate-600 hover:text-white"
+                        }`}
+                        title={isSelected ? "Selected as Default SFX (Click to switch to Random Mix)" : `Set "${item.name}" as Default SFX`}
+                      >
+                        <span className="truncate text-[11px] font-medium">{item.name}</span>
+                        <Play
+                          className={`w-3 h-3 shrink-0 ml-1 ${
+                            isSelected ? "text-teal-300 fill-teal-300" : "text-slate-500 fill-slate-500 group-hover:text-teal-400"
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 6: EFFECTS & OVERLAYS */}
         {activeTab === "effects" && (
@@ -595,43 +560,13 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               </div>
             </div>
 
-            {/* SECTION 1: FILM, NOIR & TEXTURE */}
+            {/* SECTION 1: FILM & PROJECTOR OVERLAYS */}
             <div className="space-y-2">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                🎞️ Film & Texture Overlays
+                🎞️ Film & Projector Overlays
               </span>
 
-              {/* 1. Old Film Grain */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Old Film Grain & Scratches
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    High-density 35mm film grain & flickering scratch lines
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enableFilmGrain: !settings.enableFilmGrain,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableFilmGrain ? "bg-amber-600" : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.enableFilmGrain
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* 2. Old Cinema Projector Particles */}
+              {/* 1. Old Cinema Projector Particles */}
               <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">
@@ -660,146 +595,15 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                   />
                 </button>
               </div>
-
-              {/* 3. Black & White Noir */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Black & White Film Noir
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    High-contrast classic monochrome cinema grade
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enableBlackAndWhite: !settings.enableBlackAndWhite,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableBlackAndWhite ? "bg-slate-300" : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-900 transition-transform ${
-                      settings.enableBlackAndWhite
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* 4. Vintage Sepia */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Vintage Sepia / Warm 35mm
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    Atmospheric golden cinema amber tone
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enableVintageSepia: !settings.enableVintageSepia,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableVintageSepia
-                      ? "bg-amber-600"
-                      : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.enableVintageSepia
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
             </div>
 
-            {/* SECTION 2: GEOMETRIC & RETRO HUD */}
-            <div className="space-y-2 pt-1 border-t border-[#2b2b36]">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                📐 Geometric & Retro HUD Overlays
-              </span>
-
-              {/* 5. Geometric Tech Grid */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Geometric Tech Grid & HUD
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    Framing brackets, crosshairs, reticle & rule-of-thirds
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enableGeometricGrid: !settings.enableGeometricGrid,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableGeometricGrid
-                      ? "bg-indigo-600"
-                      : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.enableGeometricGrid
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* 6. VHS Retro Scanlines */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    VHS Retro Glitch & CRT
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    80s CRT scanlines, tracking jitter & red REC
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enableVhsScanlines: !settings.enableVhsScanlines,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableVhsScanlines ? "bg-red-600" : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.enableVhsScanlines
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            {/* SECTION 3: CINEMA & OPTICS */}
+            {/* SECTION 2: CINEMA & OPTICS */}
             <div className="space-y-2 pt-1 border-t border-[#2b2b36]">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
                 🎬 Cinema & Optics Overlays
               </span>
 
-              {/* 7. Cinemascope Letterbox */}
+              {/* 2. Cinemascope Letterbox */}
               <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">
@@ -829,37 +633,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                 </button>
               </div>
 
-              {/* 8. Prism Glow */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Prism / Dreamy Optical Glow
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    Chromatic dispersion flare & soft warm haze
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({
-                      enablePrismGlow: !settings.enablePrismGlow,
-                    })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enablePrismGlow ? "bg-purple-600" : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.enablePrismGlow
-                        ? "translate-x-4"
-                        : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {/* 9. Floating Particles */}
+              {/* 3. Floating Golden Particles */}
               <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">
@@ -888,35 +662,27 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                   />
                 </button>
               </div>
-
-              {/* 10. Ambient Vignette */}
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-slate-200">
-                    Ambient Dark Vignette
-                  </div>
-                  <p className="text-[10px] text-slate-500">
-                    Deep cinematic edge gradient shading
-                  </p>
-                </div>
-                <button
-                  onClick={() =>
-                    onUpdateSettings({ enableGlow: !settings.enableGlow })
-                  }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
-                    settings.enableGlow ? "bg-slate-300" : "bg-slate-800"
-                  }`}
-                >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-slate-900 transition-transform ${
-                      settings.enableGlow ? "translate-x-4" : "translate-x-0"
-                    }`}
-                  />
-                </button>
-              </div>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Sidebar Quick Render Action Footer */}
+      <div className="p-2.5 bg-[#121215] border-t border-[#2b2b36] shrink-0">
+        <button
+          onClick={onStartRender}
+          disabled={clips.length === 0 || isExporting}
+          className={`w-full py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all shadow-lg ${
+            isExporting
+              ? "bg-slate-800 text-slate-400 cursor-wait"
+              : clips.length > 0
+              ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-indigo-500/25 cursor-pointer transform hover:scale-[1.01]"
+              : "bg-slate-800 text-slate-600 cursor-not-allowed opacity-50"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <span>{isExporting ? `Rendering (${exportProgress}%)` : "Render MP4 Video"}</span>
+        </button>
       </div>
     </div>
   );

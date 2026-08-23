@@ -42,7 +42,7 @@ export interface StudioSettings {
   fadeInSec: number;
   fadeOutSec: number;
   randomTransitions: boolean;
-  selectedTransition: TransitionEffect;
+  selectedTransition?: TransitionEffect;
   fps: 24 | 30 | 60;
   qualityPreset: "optimized" | "high" | "compact";
   hardwareProfile: HardwareProfile;

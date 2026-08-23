@@ -11,123 +11,164 @@ export interface SoundEffectItem {
 }
 
 export const SFX_LIBRARY: SoundEffectItem[] = [
+  // --- Swooshes & Transitions (9 Sounds) ---
   {
-    id: "clean-fast-swoosh",
-    name: "Fast Swoosh (Default)",
+    id: "whoosh-high",
+    name: "Whoosh High",
     category: "swoosh",
-    file: "/sfx/clean-fast-swooshaiff-14784.mp3",
+    file: "/sfx/Whoosh high.mp3",
   },
   {
-    id: "whoosh-effect-3",
-    name: "Cinematic Whoosh",
+    id: "whoosh-mid-high",
+    name: "Whoosh Mid-High",
     category: "swoosh",
-    file: "/sfx/whoosh-effect-3-225188.mp3",
+    file: "/sfx/Whoosh mid-high.aac",
   },
   {
-    id: "lens-flare",
-    name: "Lens Flare Transition",
+    id: "whoosh-mid-low",
+    name: "Whoosh Mid-Low",
     category: "swoosh",
-    file: "/sfx/Lens flare transition sound effect.mp3",
+    file: "/sfx/Whoosh mid-low.aac",
   },
   {
-    id: "camera-shutter",
-    name: "Camera Shutter",
+    id: "whoosh-low",
+    name: "Whoosh Low",
+    category: "swoosh",
+    file: "/sfx/Whoosh low.aac",
+  },
+  {
+    id: "short-whoosh",
+    name: "Short Whoosh",
+    category: "swoosh",
+    file: "/sfx/Short Whoosh.mp3",
+  },
+  {
+    id: "whoosh-fire",
+    name: "Whoosh Fire",
+    category: "swoosh",
+    file: "/sfx/whoose fire.mp3",
+  },
+  {
+    id: "short-transition",
+    name: "Short Transition",
+    category: "swoosh",
+    file: "/sfx/short transition.mp3",
+  },
+  {
+    id: "build-up",
+    name: "Build Up Rise",
+    category: "swoosh",
+    file: "/sfx/build up.mp3",
+  },
+  {
+    id: "rake-swing",
+    name: "Rake Swing Whoosh",
+    category: "swoosh",
+    file: "/sfx/rake swing.mp3",
+  },
+
+  // --- Actions, Camera & Clicks (12 Sounds) ---
+  {
+    id: "camera-2",
+    name: "Camera Shot 2",
     category: "action",
-    file: "/sfx/-camera-shutter.mp3",
+    file: "/sfx/Camera 2.mp3",
   },
   {
-    id: "camera-flash",
-    name: "Camera Flash Shot",
+    id: "camera-shutter-2",
+    name: "Camera Shutter 2",
     category: "action",
-    file: "/sfx/camera shot flash 2.mp3",
+    file: "/sfx/camera shutter 2.mp3",
   },
   {
-    id: "hit-1",
-    name: "Heavy Impact Hit",
-    category: "impact",
-    file: "/sfx/Hit 1.mp3",
-  },
-  {
-    id: "fast-impact",
-    name: "Fast Blow Impact",
-    category: "impact",
-    file: "/sfx/fast-impact-blow-2655.mp3",
-  },
-  {
-    id: "arrow-impact",
-    name: "Arrow Impact",
-    category: "impact",
-    file: "/sfx/arrow-impact-87260.mp3",
-  },
-  {
-    id: "sword-thud",
-    name: "Sword Strike Thud",
-    category: "impact",
-    file: "/sfx/sword-thud-47635.mp3",
-  },
-  {
-    id: "golem-stomp",
-    name: "Golem Stomp",
-    category: "impact",
-    file: "/sfx/mixkit-golem-stomp-c-3046.mp3",
-  },
-  {
-    id: "coin-received",
-    name: "Coin Received Chime",
-    category: "ui",
-    file: "/sfx/coin-recieved-230517.mp3",
-  },
-  {
-    id: "iphone-send",
-    name: "iPhone Send Swoosh",
-    category: "ui",
-    file: "/sfx/Iphone Send.mp3",
-  },
-  {
-    id: "iphone-receive",
-    name: "iPhone Receive Ping",
-    category: "ui",
-    file: "/sfx/Iphone Receive.mp3",
-  },
-  {
-    id: "tv-glitch",
-    name: "TV Static Glitch",
+    id: "shutter-click",
+    name: "Shutter Click",
     category: "action",
-    file: "/sfx/tv-glitch-6245.mp3",
+    file: "/sfx/Shutter Click.mp3",
   },
   {
-    id: "beep-scratch",
-    name: "Scratch Glitch",
+    id: "finger-snap",
+    name: "Finger Snap",
     category: "action",
-    file: "/sfx/beep-static-scratch-180801_0182-001-097-000-001-94862.mp3",
+    file: "/sfx/Snap.mp3",
   },
   {
-    id: "censor-beep",
-    name: "Censor Beep",
-    category: "ui",
-    file: "/sfx/censor-beep-88052.mp3",
-  },
-  {
-    id: "bone-break",
-    name: "Bone Break Echo",
+    id: "pop-sound",
+    name: "Pop Sound Effect",
     category: "action",
-    file: "/sfx/bone-breaking-with-echo-2937.mp3",
+    file: "/sfx/Pop sound effect.mp3",
   },
   {
-    id: "glitch-005",
-    name: "Digital Glitch Beep",
-    category: "ui",
-    file: "/sfx/005.mp3",
+    id: "bottle-cork",
+    name: "Bottle Cork Pop",
+    category: "action",
+    file: "/sfx/bottle cork.mp3",
+  },
+  {
+    id: "keyboard-enter",
+    name: "Keyboard Enter",
+    category: "action",
+    file: "/sfx/Keyboard enter.mp3",
+  },
+  {
+    id: "mouse-click",
+    name: "Mouse Click",
+    category: "action",
+    file: "/sfx/mouse click.mp3",
+  },
+  {
+    id: "mouse-click-1",
+    name: "Mouse Click 1",
+    category: "action",
+    file: "/sfx/Mouse click 1.aac",
+  },
+  {
+    id: "mouse-click-2-mp3",
+    name: "Mouse Click 2",
+    category: "action",
+    file: "/sfx/Mouse click 2.mp3",
+  },
+  {
+    id: "mouse-click-2-aac",
+    name: "Mouse Click Rapid",
+    category: "action",
+    file: "/sfx/Mouse click 2.aac",
+  },
+  {
+    id: "mouse-click-3",
+    name: "Mouse Click 3",
+    category: "action",
+    file: "/sfx/Mouse click 3.aac",
+  },
+
+  // --- Impacts & Shatters (1 Sound) ---
+  {
+    id: "wine-glass-shatter",
+    name: "Wine Glass Shatter",
+    category: "impact",
+    file: "/sfx/Wine Glass Shatter.mp3",
   },
 ];
 
 // Audio element pool for instantaneous, zero-lag playback
 const audioPool: Map<string, HTMLAudioElement> = new Map();
 
-export function playAudioSfx(sfxId?: string) {
-  if (typeof window === "undefined") return;
+/**
+ * Returns a randomized transition swoosh/action sound from the library.
+ */
+export function getRandomTransitionSfxId(): string {
+  const transitionSounds = SFX_LIBRARY.filter(
+    (item) => item.category === "swoosh" || item.category === "action"
+  );
+  if (transitionSounds.length === 0) return SFX_LIBRARY[0].id;
+  const rand = Math.floor(Math.random() * transitionSounds.length);
+  return transitionSounds[rand].id;
+}
 
-  const targetId = sfxId || "clean-fast-swoosh";
+export function playAudioSfx(sfxId?: string) {
+  if (typeof window === "undefined" || !sfxId || sfxId === "none") return;
+
+  const targetId = sfxId === "random" ? getRandomTransitionSfxId() : sfxId;
   const sfxItem =
     SFX_LIBRARY.find((item) => item.id === targetId) || SFX_LIBRARY[0];
 

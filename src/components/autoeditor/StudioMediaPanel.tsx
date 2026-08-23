@@ -11,7 +11,6 @@ import {
   FolderOpen,
   CheckCircle2,
   Film,
-  HardDrive,
 } from "lucide-react";
 import { AudioTrackState, TimelineClip } from "@/types/autoeditor";
 import { formatSecondsToTimecode } from "@/lib/engine/timestampParser";
@@ -76,24 +75,7 @@ export const StudioMediaPanel: React.FC<StudioMediaPanelProps> = ({
 
   return (
     <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl flex flex-col h-[520px]">
-      {/* DaVinci Media Pool Top Header */}
-      <div className="bg-[#121215] border-b border-[#2b2b36] px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
-            Media Pool
-          </span>
-          <span className="text-[10px] text-slate-500 font-mono">/ Master</span>
-        </div>
-
-        {audioTrack && (
-          <span className="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-            {formatSecondsToTimecode(audioTrack.durationSec)}
-          </span>
-        )}
-      </div>
-
-      {/* Media Pool Body */}
+      {/* Media Upload & Assets Body */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin flex flex-col justify-between">
         <div className="space-y-3">
           {/* Voiceover Audio Lane */}

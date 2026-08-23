@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Video, Cpu, HelpCircle, FileText, Info } from "lucide-react";
+import { ShieldCheck, Video, Cpu, HelpCircle, FileText, Info, Sparkles } from "lucide-react";
 
 interface NavbarProps {
   onOpenGuide?: () => void;
   onOpenLegal: (type: "privacy" | "terms" | "contact" | "sale") => void;
   onScrollToFAQ: () => void;
   onGoHome?: () => void;
+  onOpenRenderSettings?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +16,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenLegal,
   onScrollToFAQ,
   onGoHome,
+  onOpenRenderSettings,
 }) => {
   return (
     <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80 transition-all">
@@ -39,11 +41,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-indigo-400 font-extrabold">.in</span>
               </h1>
               <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold font-poppins tracking-wide uppercase rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                v2.0
+                v2.5
               </span>
             </div>
             <p className="text-xs font-semibold font-openSans text-slate-400 hidden sm:block">
-              Video Productions on Flash!
+              Productions on Flash!
             </p>
           </div>
         </button>
@@ -64,15 +66,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={() => onOpenLegal("sale")}
-            className="relative group flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold shadow-lg shadow-amber-500/15 transition-all transform hover:scale-105"
+            onClick={onOpenRenderSettings}
+            className="relative group flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 border border-indigo-500/40 text-indigo-200 hover:text-white text-xs font-bold shadow-lg shadow-indigo-500/15 transition-all transform hover:scale-105 cursor-pointer"
+            title="Open Video Render Settings"
           >
-            <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-rose-300 bg-clip-text text-transparent font-bold">
-              On Sale
-            </span>
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <span className="bg-gradient-to-r from-white via-indigo-100 to-indigo-300 bg-clip-text text-transparent font-bold">
+              Render Settings
             </span>
           </button>
         </div>

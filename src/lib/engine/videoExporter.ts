@@ -24,6 +24,7 @@ export async function exportVideoClientSide({
   subtitleStyle,
   config,
   onProgress,
+  signal,
 }: {
   clips: TimelineClip[];
   audioTrack: AudioTrackState | null;
@@ -31,6 +32,7 @@ export async function exportVideoClientSide({
   subtitleStyle: SubtitleStyleConfig;
   config: ExportConfig;
   onProgress: (percent: number, currentSec: number) => void;
+  signal?: AbortSignal;
 }): Promise<Blob> {
   const width = config.resolution.width;
   const height = config.resolution.height;
@@ -163,6 +165,8 @@ export async function exportVideoClientSide({
   const worker = new Worker(workerUrl);
 
   return new Promise<Blob>((resolve, reject) => {
+    let isAborted = false;
+
     const cleanup = () => {
       releaseWakeLock();
       worker.postMessage({ action: "stop" });
@@ -171,13 +175,38 @@ export async function exportVideoClientSide({
       if (audioContext.state !== "closed") audioContext.close();
     };
 
+    if (signal?.aborted) {
+      cleanup();
+      reject(new DOMException("Rendering aborted by user", "AbortError"));
+      return;
+    }
+
+    const handleAbort = () => {
+      isAborted = true;
+      isFinished = true;
+      try {
+        if (audioSource) audioSource.stop();
+      } catch {}
+      try {
+        if (recorder.state !== "inactive") recorder.stop();
+      } catch {}
+      cleanup();
+      reject(new DOMException("Rendering aborted by user", "AbortError"));
+    };
+
+    if (signal) {
+      signal.addEventListener("abort", handleAbort, { once: true });
+    }
+
     recorder.onstop = () => {
+      if (isAborted) return;
       cleanup();
       const outputBlob = new Blob(recordedChunks, { type: mimeType });
       resolve(outputBlob);
     };
 
     recorder.onerror = (err) => {
+      if (isAborted) return;
       cleanup();
       reject(err);
     };
@@ -193,7 +222,7 @@ export async function exportVideoClientSide({
     let isFinished = false;
 
     const renderNextFrame = () => {
-      if (isFinished) return;
+      if (isFinished || isAborted || signal?.aborted) return;
 
       if (currentSec >= totalDuration) {
         isFinished = true;
