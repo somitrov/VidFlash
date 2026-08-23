@@ -19,6 +19,7 @@ import { AdSenseBanner } from "@/components/AdSenseBanner";
 import {
   TimelineClip,
   AudioTrackState,
+  BgmTrackState,
   SubtitleCue,
   SubtitleStyleConfig,
   AspectRatioPreset,
@@ -157,7 +158,10 @@ export function VidFlashAutoEditor({
     }
   };
 
+  const [bgmTrack, setBgmTrack] = useState<BgmTrackState | null>(null);
+
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+  const bgmElementRef = useRef<HTMLAudioElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const lastCrossedClipIndexRef = useRef<number>(-1);
 
@@ -184,6 +188,12 @@ export function VidFlashAutoEditor({
         audioElementRef.current.src = decoded.audioUrl || "";
         audioElementRef.current.load();
       }
+
+      // Update BGM volume if auto-ducking is enabled
+      if (bgmElementRef.current && bgmTrack) {
+        const effectiveVol = bgmTrack.autoDucking ? (bgmTrack.duckedVolume ?? 0.18) : bgmTrack.volume;
+        bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
+      }
     } catch (err) {
       console.error("Failed to decode audio files:", err);
     }
@@ -198,6 +208,58 @@ export function VidFlashAutoEditor({
       audioElementRef.current.pause();
       audioElementRef.current.src = "";
     }
+    if (bgmElementRef.current && bgmTrack) {
+      bgmElementRef.current.volume = bgmTrack.volume;
+    }
+  };
+
+  // Handle Background Music (BGM) Upload & Smart Auto-Ducking
+  const handleUploadBgm = async (file: File) => {
+    try {
+      const decoded = await decodeAudioFiles([file]);
+      const newBgm: BgmTrackState = {
+        file,
+        fileName: file.name,
+        durationSec: decoded.durationSec,
+        audioBuffer: decoded.audioBuffer,
+        audioUrl: decoded.audioUrl,
+        volume: 0.35,
+        autoDucking: true,
+        duckedVolume: 0.18,
+      };
+      setBgmTrack(newBgm);
+      if (bgmElementRef.current && decoded.audioUrl) {
+        bgmElementRef.current.src = decoded.audioUrl;
+        const effectiveVol = newBgm.autoDucking && audioTrack ? (newBgm.duckedVolume ?? 0.18) : newBgm.volume;
+        bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
+        bgmElementRef.current.load();
+      }
+    } catch (err) {
+      console.error("Failed to decode BGM audio:", err);
+    }
+  };
+
+  const handleRemoveBgm = () => {
+    if (bgmTrack && bgmTrack.audioUrl) {
+      URL.revokeObjectURL(bgmTrack.audioUrl);
+    }
+    setBgmTrack(null);
+    if (bgmElementRef.current) {
+      bgmElementRef.current.pause();
+      bgmElementRef.current.src = "";
+    }
+  };
+
+  const handleUpdateBgm = (updates: Partial<BgmTrackState>) => {
+    setBgmTrack((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updates };
+      if (bgmElementRef.current) {
+        const effectiveVol = next.autoDucking && audioTrack ? (next.duckedVolume ?? 0.18) : next.volume;
+        bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
+      }
+      return next;
+    });
   };
 
   // Handle Media Drop
@@ -296,11 +358,13 @@ export function VidFlashAutoEditor({
       setIsPlaying(false);
       try {
         audioElementRef.current?.pause();
+        bgmElementRef.current?.pause();
       } catch {}
     } else {
       if (currentTimeSec >= totalDurationSec) {
         setCurrentTimeSec(0);
         if (audioElementRef.current) audioElementRef.current.currentTime = 0;
+        if (bgmElementRef.current) bgmElementRef.current.currentTime = 0;
       }
       setIsPlaying(true);
       if (audioElementRef.current && audioTrack?.audioUrl) {
@@ -316,6 +380,26 @@ export function VidFlashAutoEditor({
           }
         }
       }
+      if (bgmElementRef.current && bgmTrack?.audioUrl) {
+        try {
+          if (bgmTrack.durationSec > 0) {
+            bgmElementRef.current.currentTime = currentTimeSec % bgmTrack.durationSec;
+          }
+          const effectiveVol =
+            bgmTrack.autoDucking && audioTrack
+              ? (bgmTrack.duckedVolume ?? 0.18)
+              : bgmTrack.volume;
+          bgmElementRef.current.volume = Math.max(0, Math.min(1, effectiveVol));
+          const playPromise = bgmElementRef.current.play();
+          if (playPromise !== undefined) {
+            await playPromise;
+          }
+        } catch (err: any) {
+          if (err.name !== "AbortError") {
+            console.warn("BGM playback notice:", err);
+          }
+        }
+      }
     }
   };
 
@@ -325,6 +409,11 @@ export function VidFlashAutoEditor({
     if (audioElementRef.current && isFinite(audioElementRef.current.duration)) {
       try {
         audioElementRef.current.currentTime = clamped;
+      } catch {}
+    }
+    if (bgmElementRef.current && bgmTrack?.audioUrl && bgmTrack.durationSec > 0) {
+      try {
+        bgmElementRef.current.currentTime = clamped % bgmTrack.durationSec;
       } catch {}
     }
   };
@@ -367,6 +456,7 @@ export function VidFlashAutoEditor({
           setIsPlaying(false);
           try {
             audioElementRef.current?.pause();
+            bgmElementRef.current?.pause();
           } catch {}
           return totalDurationSec;
         }
@@ -468,6 +558,7 @@ export function VidFlashAutoEditor({
       const blob = await exportVideoClientSide({
         clips: timelineClips,
         audioTrack,
+        bgmTrack,
         subtitles,
         subtitleStyle,
         config,
@@ -538,8 +629,9 @@ export function VidFlashAutoEditor({
 
   return (
     <div className="w-full max-w-[1920px] mx-auto px-1 sm:px-2 py-1 space-y-2.5">
-      {/* Hidden Audio Element for synchronized playback */}
+      {/* Hidden Audio Elements for synchronized voiceover & BGM playback */}
       <audio ref={audioElementRef} />
+      <audio ref={bgmElementRef} loop preload="auto" />
 
       {/* Clean Studio Top Header Bar */}
       <div className="bg-[#121215] border border-[#2b2b36] rounded-xl px-4 py-2 flex items-center justify-between flex-wrap gap-2 text-xs shadow-xl">
@@ -626,6 +718,10 @@ export function VidFlashAutoEditor({
             totalDurationSec={totalDurationSec}
             isExporting={isExporting}
             exportProgress={exportProgress}
+            bgmTrack={bgmTrack}
+            onUploadBgm={handleUploadBgm}
+            onRemoveBgm={handleRemoveBgm}
+            onUpdateBgm={handleUpdateBgm}
             onChangeAspectRatio={handleChangeAspectRatio}
             onUpdateSettings={handleUpdateSettings}
             onUpdateSubtitles={(cues) => setSubtitles(cues)}

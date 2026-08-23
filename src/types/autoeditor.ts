@@ -97,6 +97,17 @@ export interface AudioTrackState {
   audioUrl: string | null;
 }
 
+export interface BgmTrackState {
+  file: File | null;
+  fileName: string;
+  durationSec: number;
+  audioBuffer: AudioBuffer | null;
+  audioUrl: string | null;
+  volume: number;
+  autoDucking: boolean;
+  duckedVolume: number;
+}
+
 export interface SubtitleStyleConfig {
   fontSize: number;
   fontFamily: string;

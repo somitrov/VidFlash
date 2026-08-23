@@ -4,6 +4,7 @@ import {
   SubtitleStyleConfig,
   ExportConfig,
   AudioTrackState,
+  BgmTrackState,
 } from "@/types/autoeditor";
 import { renderCompositorFrame } from "./canvasCompositor";
 
@@ -20,6 +21,7 @@ import { renderCompositorFrame } from "./canvasCompositor";
 export async function exportVideoClientSide({
   clips,
   audioTrack,
+  bgmTrack,
   subtitles,
   subtitleStyle,
   config,
@@ -28,6 +30,7 @@ export async function exportVideoClientSide({
 }: {
   clips: TimelineClip[];
   audioTrack: AudioTrackState | null;
+  bgmTrack?: BgmTrackState | null;
   subtitles: SubtitleCue[];
   subtitleStyle: SubtitleStyleConfig;
   config: ExportConfig;
@@ -39,54 +42,49 @@ export async function exportVideoClientSide({
   const fps = config.fps || 30;
   const profile = config.hardwareProfile || "balanced"; // "balanced" = 60% CPU, 80% RAM, 100% GPU
 
-  // Optimized Bitrate based on Quality Preset & Resolution
-  let videoBitsPerSecond = 2_200_000; // 2.2 Mbps (Optimized Web/YouTube - ~16.5 MB/min)
-  if (config.qualityPreset === "compact") {
-    videoBitsPerSecond = 1_200_000; // 1.2 Mbps (Data Saver - ~9 MB/min)
-  } else if (config.qualityPreset === "high") {
-    videoBitsPerSecond = 4_500_000; // 4.5 Mbps (High Fidelity)
-  }
+  // Target Bitrates optimized for crisp visuals + compact sizes
+  const videoBitsPerSecond =
+    config.qualityPreset === "high"
+      ? 4_500_000
+      : config.qualityPreset === "compact"
+      ? 1_200_000
+      : 2_500_000;
 
-  // Adjust for lower resolutions
-  if (width <= 1080 && height <= 1080) {
-    videoBitsPerSecond = Math.min(videoBitsPerSecond, 1_800_000);
-  }
-
-  const totalDuration = audioTrack
-    ? audioTrack.durationSec
-    : clips.length > 0
-    ? Math.max(...clips.map((c) => c.endSec))
-    : 5;
-
-  // 100% GPU Acceleration: desynchronized 2D canvas pipeline
+  // Offscreen Canvas for GPU 2D acceleration
   const offscreenCanvas = document.createElement("canvas");
   offscreenCanvas.width = width;
   offscreenCanvas.height = height;
   const ctx = offscreenCanvas.getContext("2d", {
     alpha: false,
-    desynchronized: true, // Maximizes GPU utilization
-    willReadFrequently: false,
+    desynchronized: true,
   });
+  if (!ctx) {
+    throw new Error("Unable to create hardware-accelerated 2D canvas context");
+  }
 
-  if (!ctx) throw new Error("Could not initialize GPU 2D render context.");
+  // Calculate master duration
+  const totalDuration = audioTrack
+    ? audioTrack.durationSec
+    : clips.length > 0
+    ? Math.max(...clips.map((c) => c.endSec))
+    : 10;
 
-  // Request Screen Wake Lock to prevent screen sleep/timeout during render
-  let wakeLockSentinel: any = null;
-  if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
-    try {
-      wakeLockSentinel = await (navigator as any).wakeLock.request("screen");
-    } catch (e) {
-      console.warn("Screen WakeLock request skipped:", e);
+  // Enable Screen Wake Lock to prevent sleep during render
+  let wakeLock: any = null;
+  try {
+    if ("wakeLock" in navigator && (navigator as any).wakeLock) {
+      wakeLock = await (navigator as any).wakeLock.request("screen");
     }
+  } catch (e) {
+    console.log("WakeLock notice:", e);
   }
 
   const releaseWakeLock = () => {
-    if (wakeLockSentinel) {
-      try {
-        wakeLockSentinel.release();
-      } catch {}
-      wakeLockSentinel = null;
-    }
+    try {
+      if (wakeLock && !wakeLock.released) {
+        wakeLock.release();
+      }
+    } catch {}
   };
 
   // Prepare Audio Stream via WebAudio
@@ -95,11 +93,31 @@ export async function exportVideoClientSide({
       .webkitAudioContext)();
   const audioDest = audioContext.createMediaStreamDestination();
 
+  // Voiceover / Master Audio Track
   let audioSource: AudioBufferSourceNode | null = null;
   if (audioTrack && audioTrack.audioBuffer) {
     audioSource = audioContext.createBufferSource();
     audioSource.buffer = audioTrack.audioBuffer;
-    audioSource.connect(audioDest);
+    const voiceGain = audioContext.createGain();
+    voiceGain.gain.value = 1.0;
+    audioSource.connect(voiceGain);
+    voiceGain.connect(audioDest);
+  }
+
+  // Background Music (BGM) Track with Auto-Ducking
+  let bgmSource: AudioBufferSourceNode | null = null;
+  if (bgmTrack && bgmTrack.audioBuffer) {
+    bgmSource = audioContext.createBufferSource();
+    bgmSource.buffer = bgmTrack.audioBuffer;
+    bgmSource.loop = true; // Auto-loop BGM if video is longer than track
+    const bgmGain = audioContext.createGain();
+    const effectiveBgmVolume =
+      bgmTrack.autoDucking && audioTrack
+        ? (bgmTrack.duckedVolume ?? 0.18)
+        : (bgmTrack.volume ?? 0.35);
+    bgmGain.gain.value = effectiveBgmVolume;
+    bgmSource.connect(bgmGain);
+    bgmGain.connect(audioDest);
   }
 
   // Combine Canvas Video Stream & Audio Stream
@@ -107,7 +125,7 @@ export async function exportVideoClientSide({
   const combinedStream = new MediaStream();
 
   canvasStream.getVideoTracks().forEach((t) => combinedStream.addTrack(t));
-  if (audioTrack && audioDest.stream.getAudioTracks().length > 0) {
+  if ((audioTrack || bgmTrack) && audioDest.stream.getAudioTracks().length > 0) {
     audioDest.stream
       .getAudioTracks()
       .forEach((t) => combinedStream.addTrack(t));
@@ -188,6 +206,9 @@ export async function exportVideoClientSide({
         if (audioSource) audioSource.stop();
       } catch {}
       try {
+        if (bgmSource) bgmSource.stop();
+      } catch {}
+      try {
         if (recorder.state !== "inactive") recorder.stop();
       } catch {}
       cleanup();
@@ -214,6 +235,9 @@ export async function exportVideoClientSide({
     recorder.start(5000); // 5s chunk slices for RAM guard
     if (audioSource) {
       audioSource.start(0);
+    }
+    if (bgmSource) {
+      bgmSource.start(0);
     }
 
     const frameDurationSec = 1 / fps;

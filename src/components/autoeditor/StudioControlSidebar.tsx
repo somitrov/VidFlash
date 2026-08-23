@@ -21,6 +21,7 @@ import {
   Eye,
   CheckCircle2,
   Play,
+  Trash2,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -31,6 +32,7 @@ import {
   TransitionEffect,
   StudioSettings,
   HardwareProfile,
+  BgmTrackState,
 } from "@/types/autoeditor";
 import { formatSecondsToTimecode } from "@/lib/engine/timestampParser";
 import { parseScriptOrSRTContent } from "./StudioSubtitlesPanel";
@@ -46,6 +48,10 @@ interface StudioControlSidebarProps {
   totalDurationSec: number;
   isExporting: boolean;
   exportProgress: number;
+  bgmTrack?: BgmTrackState | null;
+  onUploadBgm?: (file: File) => void;
+  onRemoveBgm?: () => void;
+  onUpdateBgm?: (updates: Partial<BgmTrackState>) => void;
   onChangeAspectRatio: (ratio: AspectRatioPreset) => void;
   onUpdateSettings: (newSettings: Partial<StudioSettings>) => void;
   onUpdateSubtitles: (cues: SubtitleCue[]) => void;
@@ -90,6 +96,10 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
   totalDurationSec,
   isExporting,
   exportProgress,
+  bgmTrack,
+  onUploadBgm,
+  onRemoveBgm,
+  onUpdateBgm,
   onChangeAspectRatio,
   onUpdateSettings,
   onUpdateSubtitles,
@@ -100,6 +110,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<InspectorTab>("video");
   const scriptInputRef = useRef<HTMLInputElement>(null);
+  const bgmInputRef = useRef<HTMLInputElement>(null);
 
   const activeSfxId = settings.selectedSfxId || "clean-fast-swoosh";
 
@@ -442,6 +453,134 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                     }`}
                   />
                 </button>
+              </div>
+
+              {/* BACKGROUND MUSIC (BGM) & SMART AUTO-DUCKING */}
+              <div className="bg-[#121215] border border-[#2b2b36] rounded-xl p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5">
+                    <Music className="w-3.5 h-3.5 text-teal-400" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-200 font-mono">
+                      Background Music (BGM)
+                    </span>
+                  </div>
+                  {bgmTrack && onRemoveBgm && (
+                    <button
+                      onClick={onRemoveBgm}
+                      className="text-[10px] text-red-400 hover:text-red-300 font-semibold flex items-center space-x-1 transition-colors cursor-pointer"
+                      title="Remove BGM Track"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Remove</span>
+                    </button>
+                  )}
+                </div>
+
+                {!bgmTrack ? (
+                  <div>
+                    <input
+                      ref={bgmInputRef}
+                      type="file"
+                      accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0] && onUploadBgm) {
+                          onUploadBgm(e.target.files[0]);
+                          e.target.value = "";
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => bgmInputRef.current?.click()}
+                      className="w-full py-2.5 px-3 rounded-lg border border-dashed border-teal-500/40 hover:border-teal-400 bg-teal-950/20 hover:bg-teal-950/40 text-teal-300 text-xs font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer group"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-teal-400 group-hover:scale-110 transition-transform" />
+                      <span>Upload Royalty-Free Music / BGM</span>
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center mt-1">
+                      Supports MP3, WAV, AAC, M4A — Auto-loops seamlessly
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between bg-[#18181c] border border-[#2b2b36] px-2.5 py-1.5 rounded-lg">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <Volume2 className="w-3.5 h-3.5 text-teal-400 shrink-0" />
+                        <span className="text-xs text-white font-medium truncate">
+                          {bgmTrack.fileName}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 shrink-0 ml-2">
+                        {formatSecondsToTimecode(bgmTrack.durationSec)}
+                      </span>
+                    </div>
+
+                    {/* Auto-Ducking & Voice Priority Toggle */}
+                    <div className="flex items-center justify-between pt-1 border-t border-[#2b2b36]">
+                      <div className="pr-2">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-semibold text-slate-200">
+                            Smart Auto-Ducking
+                          </span>
+                          <span className="text-[9px] font-bold text-teal-300 bg-teal-950/80 border border-teal-500/30 px-1.5 py-0.5 rounded">
+                            -50% Voice Bed
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 block mt-0.5 leading-tight">
+                          {bgmTrack.autoDucking
+                            ? "Music automatically lowered by ~50% during voiceover speech"
+                            : "Music plays at fixed background level without voice ducking"}
+                        </span>
+                      </div>
+                      {onUpdateBgm && (
+                        <button
+                          onClick={() =>
+                            onUpdateBgm({ autoDucking: !bgmTrack.autoDucking })
+                          }
+                          className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                            bgmTrack.autoDucking
+                              ? "bg-teal-600 shadow-sm shadow-teal-500/30"
+                              : "bg-slate-800"
+                          }`}
+                          title={
+                            bgmTrack.autoDucking
+                              ? "Disable Auto-Ducking"
+                              : "Enable Auto-Ducking"
+                          }
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                              bgmTrack.autoDucking ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* BGM Volume Level Slider */}
+                    <div className="space-y-1 pt-1">
+                      <div className="flex justify-between text-[11px] text-slate-300">
+                        <span>BGM Background Level</span>
+                        <span className="font-mono text-teal-400 font-bold">
+                          {Math.round(bgmTrack.volume * 100)}%
+                          {bgmTrack.autoDucking ? " (Ducked on speech)" : ""}
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.05"
+                        max="1.0"
+                        step="0.05"
+                        value={bgmTrack.volume}
+                        onChange={(e) =>
+                          onUpdateBgm &&
+                          onUpdateBgm({ volume: parseFloat(e.target.value) })
+                        }
+                        className="w-full accent-teal-500 h-1.5 bg-[#121215] rounded-lg cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
