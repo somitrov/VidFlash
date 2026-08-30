@@ -252,9 +252,11 @@ export const StudioSubtitlesPanel: React.FC<StudioSubtitlesPanelProps> = ({
 export function parseScriptOrSRTContent(rawText: string): SubtitleCue[] {
   if (!rawText || !rawText.trim()) return [];
 
+  const normalized = rawText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
   // 1. Check if standard SRT / VTT format
-  if (/-->\s*\d{1,2}:\d{2}:\d{2}/.test(rawText)) {
-    const lines = rawText.replace(/\r\n/g, "\n").split("\n");
+  if (/(?:-->|\d{1,2}:\d{2}:\d{2})/.test(normalized)) {
+    const lines = normalized.split("\n");
     const cues: SubtitleCue[] = [];
     let i = 0;
 
@@ -265,38 +267,48 @@ export function parseScriptOrSRTContent(rawText: string): SubtitleCue[] {
         continue;
       }
 
-      if (/^\d+$/.test(line) || line.includes("-->")) {
-        let timeLine = line;
-        if (/^\d+$/.test(line)) {
+      let timeLine = line;
+      if (/^\d+$/.test(line) && i + 1 < lines.length && lines[i + 1].includes("-->")) {
+        i++;
+        timeLine = lines[i].trim();
+      }
+
+      const match = timeLine.match(
+        /(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})/
+      );
+
+      if (match) {
+        const startMs = match[4].padEnd(3, "0").slice(0, 3);
+        const endMs = match[8].padEnd(3, "0").slice(0, 3);
+        const startSec =
+          parseInt(match[1], 10) * 3600 +
+          parseInt(match[2], 10) * 60 +
+          parseInt(match[3], 10) +
+          parseInt(startMs, 10) / 1000;
+
+        const endSec =
+          parseInt(match[5], 10) * 3600 +
+          parseInt(match[6], 10) * 60 +
+          parseInt(match[7], 10) +
+          parseInt(endMs, 10) / 1000;
+
+        i++;
+        const textParts: string[] = [];
+        while (
+          i < lines.length &&
+          lines[i].trim() !== "" &&
+          !lines[i].includes("-->") &&
+          !(/^\d+$/.test(lines[i].trim()) && i + 1 < lines.length && lines[i + 1].includes("-->"))
+        ) {
+          const cleanLine = lines[i].replace(/<[^>]+>/g, "").trim();
+          if (cleanLine) {
+            textParts.push(cleanLine);
+          }
           i++;
-          if (i >= lines.length) break;
-          timeLine = lines[i].trim();
         }
 
-        const match = timeLine.match(
-          /(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})/
-        );
-
-        if (match) {
-          const startSec =
-            parseInt(match[1], 10) * 3600 +
-            parseInt(match[2], 10) * 60 +
-            parseInt(match[3], 10) +
-            parseInt(match[4], 10) / 1000;
-
-          const endSec =
-            parseInt(match[5], 10) * 3600 +
-            parseInt(match[6], 10) * 60 +
-            parseInt(match[7], 10) +
-            parseInt(match[8], 10) / 1000;
-
-          i++;
-          let text = "";
-          while (i < lines.length && lines[i].trim() !== "") {
-            text += (text ? " " : "") + lines[i].trim();
-            i++;
-          }
-
+        const text = textParts.join(" ").trim();
+        if (text) {
           cues.push({
             id: `srt_${cues.length}`,
             text,
@@ -304,18 +316,19 @@ export function parseScriptOrSRTContent(rawText: string): SubtitleCue[] {
             endSec: Number(endSec.toFixed(2)),
           });
         }
+        continue;
       }
       i++;
     }
     if (cues.length > 0) return cues;
   }
 
-  // 2. Parse Text with Inline or Multiline Timestamps: (0:00), (0:02), [01:24], (18:23), etc.
+  // 2. Parse Text with Inline or Multiline Timestamps: (0:00), (0:02), [01:24], 18:23, etc.
   const timeRegex = /[\(\[\<]?\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\b[\)\]\>]?/g;
   const matches: { startIdx: number; endIdx: number; timeSec: number }[] = [];
   let m: RegExpExecArray | null;
 
-  while ((m = timeRegex.exec(rawText)) !== null) {
+  while ((m = timeRegex.exec(normalized)) !== null) {
     const fullMatch = m[0];
     const hrs = m[1] ? parseInt(m[1], 10) : 0;
     const mins = parseInt(m[2], 10);
@@ -331,7 +344,10 @@ export function parseScriptOrSRTContent(rawText: string): SubtitleCue[] {
   }
 
   if (matches.length === 0) {
-    const lines = rawText.split(/[\n\r]+/).map((l) => l.trim()).filter(Boolean);
+    const lines = normalized
+      .split("\n")
+      .map((l) => l.replace(/<[^>]+>/g, "").trim())
+      .filter(Boolean);
     return lines.map((text, idx) => ({
       id: `script_${idx}`,
       text,
@@ -346,11 +362,15 @@ export function parseScriptOrSRTContent(rawText: string): SubtitleCue[] {
     const next = matches[k + 1];
 
     const textStart = curr.endIdx;
-    const textEnd = next ? next.startIdx : rawText.length;
-    let text = rawText.slice(textStart, textEnd).trim();
+    const textEnd = next ? next.startIdx : normalized.length;
+    let text = normalized.slice(textStart, textEnd).trim();
 
-    // Clean up leading/trailing delimiters
-    text = text.replace(/^[\:\-\s\>\)\]]+/, "").replace(/[\(\[\<]+$/, "").trim();
+    // Clean up HTML tags and leading/trailing delimiters
+    text = text
+      .replace(/<[^>]+>/g, "")
+      .replace(/^[\:\-\s\>\)\]]+/, "")
+      .replace(/[\(\[\<]+$/, "")
+      .trim();
     if (!text) continue;
 
     const startSec = curr.timeSec;

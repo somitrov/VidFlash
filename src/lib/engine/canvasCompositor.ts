@@ -118,6 +118,7 @@ export function renderCompositorFrame({
       );
 
       // Render transition composite
+      ctx.save();
       renderTransitionComposite(
         ctx,
         currentClip,
@@ -132,6 +133,7 @@ export function renderCompositorFrame({
         enableVintageFilmReel,
         currentTimeSec
       );
+      ctx.restore();
     } else {
       // Normal single clip rendering with Ken Burns
       ctx.save();
@@ -1465,6 +1467,41 @@ function renderFloatingParticles(
 }
 
 /**
+ * Helper to safely draw rounded rectangles on canvas across all browser engines
+ */
+function drawSafeRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+) {
+  if (w <= 0 || h <= 0) return;
+  const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    try {
+      ctx.roundRect(x, y, w, h, radius);
+      ctx.fill();
+      return;
+    } catch {}
+  }
+  // Fallback arc-based rounded rectangle
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.arcTo(x + w, y, x + w, y + radius, radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+  ctx.lineTo(x + radius, y + h);
+  ctx.arcTo(x, y + h, x, y + h - radius, radius);
+  ctx.lineTo(x, y + radius);
+  ctx.arcTo(x, y, x + radius, y, radius);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/**
  * Dynamic Subtitle Renderer
  */
 function renderSubtitles(
@@ -1475,54 +1512,80 @@ function renderSubtitles(
   subtitles: SubtitleCue[],
   style: SubtitleStyleConfig
 ) {
+  if (!subtitles || !Array.isArray(subtitles) || subtitles.length === 0) return;
+
   const activeCue = subtitles.find(
-    (s) => currentTimeSec >= s.startSec && currentTimeSec <= s.endSec
+    (s) =>
+      currentTimeSec >= s.startSec - 0.05 && currentTimeSec <= s.endSec + 0.05
   );
-  if (!activeCue || !activeCue.text.trim()) return;
+  if (!activeCue || !activeCue.text || !activeCue.text.trim()) return;
 
   ctx.save();
-  const scale = width / 1920;
-  const scaledFontSize = Math.max(16, Math.round(style.fontSize * scale));
 
-  ctx.font = `bold ${scaledFontSize}px '${style.fontFamily}', -apple-system, sans-serif`;
+  // Reset any lingering canvas context filters or blend modes
+  ctx.globalAlpha = 1.0;
+  ctx.filter = "none";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Responsive scale based on aspect ratio & resolution
+  const scale = width < height ? height / 1920 : width / 1920;
+  const effectiveScale = Math.max(0.65, Math.min(2.5, scale));
+  const rawFontSize = style?.fontSize || 34;
+  const scaledFontSize = Math.max(20, Math.round(rawFontSize * effectiveScale));
+
+  const cleanFont = (style?.fontFamily || "Poppins")
+    .replace(/['"]/g, "")
+    .trim();
+  ctx.font = `bold ${scaledFontSize}px "${cleanFont}", Inter, system-ui, -apple-system, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  const lines = wrapText(ctx, activeCue.text, width * 0.85);
-  const lineHeight = scaledFontSize * 1.35;
+  const lines = wrapText(ctx, activeCue.text, width * 0.86);
+  const lineHeight = scaledFontSize * 1.38;
 
   let startY = height * 0.82;
-  if (style.position === "top") startY = height * 0.15;
-  if (style.position === "center") startY = height * 0.5;
+  if (style?.position === "top") {
+    startY = height * 0.15;
+  } else if (style?.position === "center") {
+    startY = height * 0.5;
+  } else if (style?.yOffsetPercent !== undefined) {
+    startY = height * (style.yOffsetPercent / 100);
+  }
 
   lines.forEach((line, index) => {
     const y = startY + (index - (lines.length - 1) / 2) * lineHeight;
 
-    if (style.showBackground) {
+    if (style?.showBackground !== false) {
       const textMetrics = ctx.measureText(line);
-      const paddingX = scaledFontSize * 0.45;
-      const paddingY = scaledFontSize * 0.25;
+      const paddingX = Math.round(scaledFontSize * 0.48);
+      const paddingY = Math.round(scaledFontSize * 0.26);
+      const radius = Math.round(8 * effectiveScale);
 
-      ctx.fillStyle = style.bgColor || "rgba(0, 0, 0, 0.75)";
-      ctx.beginPath();
-      ctx.roundRect(
+      ctx.fillStyle = style?.bgColor || "rgba(0, 0, 0, 0.78)";
+      drawSafeRoundedRect(
+        ctx,
         width / 2 - textMetrics.width / 2 - paddingX,
         y - lineHeight / 2 + paddingY / 2,
         textMetrics.width + paddingX * 2,
         lineHeight - paddingY,
-        8 * scale
+        radius
       );
-      ctx.fill();
     }
 
-    if (style.strokeWidth > 0) {
-      ctx.strokeStyle = style.strokeColor || "#000000";
-      ctx.lineWidth = style.strokeWidth * scale * 2;
+    const strokeWidth = style?.strokeWidth ?? 4;
+    if (strokeWidth > 0) {
+      ctx.strokeStyle = style?.strokeColor || "#000000";
+      ctx.lineWidth = Math.max(2, strokeWidth * effectiveScale * 1.5);
       ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
       ctx.strokeText(line, width / 2, y);
     }
 
-    ctx.fillStyle = style.color || "#ffffff";
+    ctx.fillStyle = style?.color || "#ffffff";
     ctx.fillText(line, width / 2, y);
   });
 
@@ -1534,22 +1597,29 @@ function wrapText(
   text: string,
   maxWidth: number
 ): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let currentLine = "";
+  if (!text) return [];
+  const paragraphs = text.split(/\r?\n/);
+  const resultLines: string[] = [];
 
-  for (const word of words) {
-    const testLine = currentLine ? `${currentLine} ${word}` : word;
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && currentLine) {
-      lines.push(currentLine);
-      currentLine = word;
-    } else {
-      currentLine = testLine;
+  for (const para of paragraphs) {
+    const trimmedPara = para.trim();
+    if (!trimmedPara) continue;
+    const words = trimmedPara.split(/\s+/);
+    let currentLine = "";
+
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && currentLine) {
+        resultLines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
     }
+    if (currentLine) resultLines.push(currentLine);
   }
-  if (currentLine) lines.push(currentLine);
-  return lines;
+  return resultLines.length > 0 ? resultLines : [text];
 }
 
 function easeInOutQuad(t: number): number {
