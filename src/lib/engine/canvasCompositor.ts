@@ -26,6 +26,7 @@ export function renderCompositorFrame({
   fadeOutSec = 0.6,
   enableParticles = false,
   enableGlow = false,
+  enableVintageFilmReel = false,
   enableFilmGrain = false,
   enableOldCinema = false,
   enableGeometricGrid = false,
@@ -47,6 +48,7 @@ export function renderCompositorFrame({
   fadeOutSec?: number;
   enableParticles?: boolean;
   enableGlow?: boolean;
+  enableVintageFilmReel?: boolean;
   enableFilmGrain?: boolean;
   enableOldCinema?: boolean;
   enableGeometricGrid?: boolean;
@@ -69,6 +71,8 @@ export function renderCompositorFrame({
     baseFilter = "grayscale(100%) contrast(120%) brightness(105%)";
   } else if (enableVintageSepia) {
     baseFilter = "sepia(75%) contrast(110%) brightness(95%)";
+  } else if (enableVintageFilmReel) {
+    baseFilter = "sepia(30%) contrast(110%) brightness(96%) saturate(85%)";
   }
 
   // 2. Active Clip & Transition Evaluation
@@ -124,7 +128,9 @@ export function renderCompositorFrame({
         nextClip.transition,
         width,
         height,
-        baseFilter
+        baseFilter,
+        enableVintageFilmReel,
+        currentTimeSec
       );
     } else {
       // Normal single clip rendering with Ken Burns
@@ -136,7 +142,9 @@ export function renderCompositorFrame({
         width,
         height,
         1.0,
-        baseFilter
+        baseFilter,
+        enableVintageFilmReel,
+        currentTimeSec
       );
       ctx.restore();
     }
@@ -152,7 +160,9 @@ export function renderCompositorFrame({
       width,
       height,
       1.0,
-      baseFilter
+      baseFilter,
+      enableVintageFilmReel,
+      currentTimeSec
     );
     ctx.restore();
   }
@@ -160,27 +170,32 @@ export function renderCompositorFrame({
   // Reset filter for procedural overlays
   ctx.filter = "none";
 
-  // 3. Prism / Dreamy Optical Glow Overlay (Optional)
+  // 3. Vintage Film Reel & Gate Weave Overlay (Optional)
+  if (enableVintageFilmReel) {
+    renderVintageFilmReelOverlay(ctx, width, height, currentTimeSec);
+  }
+
+  // 4. Prism / Dreamy Optical Glow Overlay (Optional)
   if (enablePrismGlow) {
     renderPrismGlow(ctx, width, height, currentTimeSec);
   }
 
-  // 4. Ambient Vignette Overlay (Optional)
+  // 5. Ambient Vignette Overlay (Optional)
   if (enableGlow) {
     renderAmbientVignette(ctx, width, height);
   }
 
-  // 5. Floating Golden Particles (Optional)
+  // 6. Floating Golden Particles (Optional)
   if (enableParticles) {
     renderFloatingParticles(ctx, width, height, currentTimeSec);
   }
 
-  // 6. Old Cinema Projector Particles & Light Flicker Overlay (Optional)
+  // 7. Old Cinema Projector Particles & Light Flicker Overlay (Optional)
   if (enableOldCinema) {
     renderOldCinema(ctx, width, height, currentTimeSec);
   }
 
-  // 7. Old Film Grain & Scratches Overlay (Optional)
+  // 8. Old Film Grain & Scratches Overlay (Optional)
   if (enableFilmGrain) {
     renderFilmGrain(ctx, width, height, currentTimeSec);
   }
@@ -240,7 +255,9 @@ function renderTransitionComposite(
   transition: TransitionEffect,
   width: number,
   height: number,
-  filterStr: string = "none"
+  filterStr: string = "none",
+  enableVintageFilmReel: boolean = false,
+  currentTimeSec: number = 0
 ) {
   const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
@@ -912,7 +929,9 @@ function renderSingleClip(
   canvasWidth: number,
   canvasHeight: number,
   alpha: number = 1.0,
-  filterStr: string = "none"
+  filterStr: string = "none",
+  enableVintageFilmReel: boolean = false,
+  currentTimeSec: number = 0
 ) {
   if (alpha <= 0.001) return;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
@@ -944,6 +963,7 @@ function renderSingleClip(
   let offsetY = 0;
   const easeProgress = easeInOutQuad(progress);
 
+  // 1. Subtle & Cinematic Ken Burns Motion
   switch (clip.motion) {
     case "ken-burns-zoom-in":
       scaleMultiplier = 1.0 + 0.12 * easeProgress;
@@ -964,16 +984,141 @@ function renderSingleClip(
       break;
     case "none":
     default:
-      scaleMultiplier = 1.0;
+      if (enableVintageFilmReel) {
+        // Automatic subtle Ken Burns push-in for vintage reel
+        scaleMultiplier = 1.0 + 0.065 * easeProgress;
+      } else {
+        scaleMultiplier = 1.0;
+      }
       break;
+  }
+
+  // 2. Film Gate Weave / Subtle Projector Jitter (Gentle vintage organic mechanical instability)
+  let weaveX = 0;
+  let weaveY = 0;
+  if (enableVintageFilmReel) {
+    const frameId = Math.floor(currentTimeSec * 24);
+    // Slight 2.5% overscan padding to prevent any edge reveal during sub-pixel weave
+    scaleMultiplier *= 1.025;
+
+    // Organic mechanical film reel drift (low frequency) + frame registration flutter (high frequency)
+    const scaleFactor = canvasWidth / 1920;
+    weaveX =
+      (Math.sin(currentTimeSec * 5.8) * 1.6 +
+       Math.cos(currentTimeSec * 11.3) * 0.9 +
+       ((Math.sin(frameId * 17.31) * 1000) % 1.4 - 0.7)) * scaleFactor;
+    weaveY =
+      (Math.cos(currentTimeSec * 4.6) * 1.3 +
+       Math.sin(currentTimeSec * 9.1) * 0.8 +
+       ((Math.cos(frameId * 23.47) * 1000) % 1.2 - 0.6)) * scaleFactor;
   }
 
   const finalWidth = baseWidth * scaleMultiplier;
   const finalHeight = baseHeight * scaleMultiplier;
-  const drawX = (canvasWidth - finalWidth) / 2 + offsetX;
-  const drawY = (canvasHeight - finalHeight) / 2 + offsetY;
+  const drawX = (canvasWidth - finalWidth) / 2 + offsetX + weaveX;
+  const drawY = (canvasHeight - finalHeight) / 2 + offsetY + weaveY;
 
   ctx.drawImage(mediaSource, drawX, drawY, finalWidth, finalHeight);
+}
+
+/**
+ * 0. Vintage Archival Film Reel Overlay (1-Click Master Film FX)
+ * Authentic 16mm/35mm Film Grain + Projector Bulb Shutter Exposure Flicker + Faint Vertical Scratches + Dust Particles + Soft Archival Vignette
+ */
+function renderVintageFilmReelOverlay(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  timeSec: number
+) {
+  ctx.save();
+  const frameId = Math.floor(timeSec * 24);
+
+  // 1. Projector Lamp Shutter Exposure Flicker (Authentic organic luminance pulse)
+  const lampFlicker =
+    0.032 +
+    Math.sin(timeSec * 29.5) * 0.022 +
+    Math.sin(frameId * 11.7) * 0.012;
+  ctx.fillStyle = `rgba(255, 240, 210, ${Math.max(0.01, lampFlicker)})`;
+  ctx.fillRect(0, 0, width, height);
+
+  // 2. Fine Dynamic 16mm Film Grain (Realistic density)
+  ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+  const grainCount = 360;
+  for (let i = 0; i < grainCount; i++) {
+    const gx =
+      ((Math.sin(frameId * 19.31 + i * 83.17) * 43758.5453) % 1) * width;
+    const gy =
+      ((Math.cos(frameId * 37.19 + i * 51.43) * 23421.6312) % 1) * height;
+    ctx.fillRect(Math.abs(gx), Math.abs(gy), 1.8, 1.8);
+  }
+
+  // Dynamic Soft Dark Grain Specks
+  ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+  for (let i = 0; i < 200; i++) {
+    const gx =
+      ((Math.sin(frameId * 59.23 + i * 31.79) * 12345.6789) % 1) * width;
+    const gy =
+      ((Math.cos(frameId * 23.41 + i * 71.67) * 98765.4321) % 1) * height;
+    ctx.fillRect(Math.abs(gx), Math.abs(gy), 1.4, 1.4);
+  }
+
+  // 3. Faint Vertical Hair & Film Scratches (Subtle and occasional)
+  if (frameId % 3 === 0) {
+    const scratchX = (Math.abs(Math.sin(frameId * 89.7)) * width) % width;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+    ctx.lineWidth = 1.0;
+    ctx.beginPath();
+    ctx.moveTo(scratchX, 0);
+    ctx.lineTo(scratchX + (Math.sin(frameId * 2) - 0.5) * 5, height);
+    ctx.stroke();
+  }
+
+  if (frameId % 5 === 0) {
+    const scratchDarkX = (Math.abs(Math.cos(frameId * 53.3)) * width) % width;
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.28)";
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(scratchDarkX, 0);
+    ctx.lineTo(scratchDarkX + (Math.cos(frameId * 3) - 0.5) * 3, height);
+    ctx.stroke();
+  }
+
+  // 4. Projector Floating Dust Motes & Specks
+  const dustCount = 28;
+  for (let i = 0; i < dustCount; i++) {
+    const seed = i * 43.19;
+    const speed = 0.18 + (i % 5) * 0.07;
+    const px = ((Math.sin(seed + timeSec * speed) * 0.5 + 0.5) * width) % width;
+    const py =
+      ((Math.cos(seed * 1.5 + timeSec * speed * 0.8) * 0.5 + 0.5) * height) %
+      height;
+    const size = 1.2 + (i % 4) * 1.6;
+    const opacity = 0.16 + Math.sin(timeSec * 2.2 + i) * 0.1;
+
+    ctx.fillStyle = `rgba(255, 235, 175, ${opacity})`;
+    ctx.beginPath();
+    ctx.arc(px, py, size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 5. Soft Archival Edge Vignette
+  const vignette = ctx.createRadialGradient(
+    width / 2,
+    height / 2,
+    Math.min(width, height) * 0.35,
+    width / 2,
+    height / 2,
+    Math.max(width, height) * 0.72
+  );
+  vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+  vignette.addColorStop(0.65, "rgba(18, 12, 8, 0.18)");
+  vignette.addColorStop(1, "rgba(5, 3, 2, 0.65)");
+
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.restore();
 }
 
 /**

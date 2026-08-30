@@ -9,6 +9,7 @@ import {
   Volume2,
   Eye,
   GripVertical,
+  LocateFixed,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -26,6 +27,7 @@ interface StudioTimelineProps {
   currentTimeSec: number;
   totalDurationSec: number;
   selectedClipId: string | null;
+  isPlaying?: boolean;
   onSelectClip: (id: string | null) => void;
   onSeek: (timeSec: number) => void;
   onUpdateClipMotion: (clipId: string, motion: MotionEffect) => void;
@@ -41,6 +43,7 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
   currentTimeSec,
   totalDurationSec,
   selectedClipId,
+  isPlaying = false,
   onSelectClip,
   onSeek,
   onUpdateClipMotion,
@@ -50,6 +53,7 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(30); // pixels per second (0 = Fit All Mode)
   const [isFitMode, setIsFitMode] = useState<boolean>(false);
+  const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState<boolean>(true);
   const timelineRef = useRef<HTMLDivElement>(null);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
 
@@ -68,6 +72,37 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
     : zoomLevel;
 
   const timelineTrackWidthPx = duration * effectiveZoom;
+  const playheadPosPx = 70 + currentTimeSec * effectiveZoom;
+
+  // Page-Flipping Auto-Scroll:
+  // When playhead reaches the right edge, instantly flip the timeline page forward
+  // so the playhead reflects back to the left starting point while video continues playing!
+  useEffect(() => {
+    if (!timelineRef.current || isFitMode || !isAutoScrollEnabled || isDraggingPlayhead) {
+      return;
+    }
+
+    const el = timelineRef.current;
+    const scrollLeft = el.scrollLeft;
+    const clientWidth = el.clientWidth;
+    const rightVisibleEdge = scrollLeft + clientWidth;
+    const leftVisibleEdge = scrollLeft + 70;
+
+    if (isPlaying) {
+      // When playhead hits near the right edge: flip page forward to bring playhead back to the left start point
+      if (playheadPosPx >= rightVisibleEdge - 15) {
+        el.scrollLeft = playheadPosPx - 70;
+      } else if (playheadPosPx < leftVisibleEdge - 10) {
+        // If playhead jumped backward (e.g. loop restart): flip page back to start
+        el.scrollLeft = Math.max(0, playheadPosPx - 70);
+      }
+    } else {
+      // When paused or seeking: if playhead is out of the visible screen, align page to playhead
+      if (playheadPosPx < leftVisibleEdge || playheadPosPx > rightVisibleEdge - 15) {
+        el.scrollLeft = Math.max(0, playheadPosPx - 70);
+      }
+    }
+  }, [currentTimeSec, isPlaying, isFitMode, isAutoScrollEnabled, isDraggingPlayhead, playheadPosPx]);
 
   const handleSeekFromEvent = useCallback(
     (clientX: number) => {
@@ -90,6 +125,17 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       if (isDraggingPlayhead && !activeDragBoundary) {
         handleSeekFromEvent(e.clientX);
+
+        // Edge pan while dragging playhead near borders
+        if (timelineRef.current && !isFitMode) {
+          const rect = timelineRef.current.getBoundingClientRect();
+          const relativeX = e.clientX - rect.left;
+          if (relativeX > rect.width - 50) {
+            timelineRef.current.scrollLeft += 15;
+          } else if (relativeX < 70) {
+            timelineRef.current.scrollLeft = Math.max(0, timelineRef.current.scrollLeft - 15);
+          }
+        }
       }
     };
     const handleMouseUp = () => {
@@ -106,7 +152,7 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDraggingPlayhead, activeDragBoundary, handleSeekFromEvent]);
+  }, [isDraggingPlayhead, activeDragBoundary, isFitMode, handleSeekFromEvent]);
 
   // Handle Interactive Boundary Resizing
   const handleBoundaryMouseDown = (
@@ -167,8 +213,6 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
     window.addEventListener("mouseup", upHandler);
   };
 
-  const playheadPosPx = 70 + currentTimeSec * effectiveZoom;
-
   return (
     <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl space-y-0">
       {/* Clean Timeline Top Toolbar */}
@@ -185,11 +229,24 @@ export const StudioTimeline: React.FC<StudioTimelineProps> = ({
           </span>
         </div>
 
-        {/* Right: Fit Mode & Zoom Slider */}
-        <div className="flex items-center space-x-3 text-slate-400">
+        {/* Right: Auto-Scroll, Fit Mode & Zoom Slider */}
+        <div className="flex items-center space-x-2.5 text-slate-400">
+          <button
+            onClick={() => setIsAutoScrollEnabled((prev) => !prev)}
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center space-x-1 transition-colors border cursor-pointer ${
+              isAutoScrollEnabled
+                ? "bg-indigo-950/80 border-indigo-500/60 text-indigo-300 shadow-sm shadow-indigo-500/10"
+                : "bg-[#1f1f26] border-[#2b2b36] text-slate-500 hover:text-slate-300"
+            }`}
+            title={isAutoScrollEnabled ? "Auto-Scroll Enabled (Following Playhead)" : "Auto-Scroll Paused (Click to Enable)"}
+          >
+            <LocateFixed className="w-3 h-3 text-indigo-400" />
+            <span>{isAutoScrollEnabled ? "Auto-Follow" : "Follow Off"}</span>
+          </button>
+
           <button
             onClick={() => setIsFitMode((prev) => !prev)}
-            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center space-x-1 transition-colors border ${
+            className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center space-x-1 transition-colors border cursor-pointer ${
               isFitMode
                 ? "bg-red-950/80 border-red-500 text-red-300"
                 : "bg-[#1f1f26] border-[#2b2b36] text-slate-300 hover:text-white"

@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "VidFlash.in - Videos on Flash!",
+    name: "VidFlash.in - Videos in Flash!",
     short_name: "VidFlash",
     description:
       "Automated video editing and in-browser audiobook to YouTube MP4 conversion suite with zero server uploads.",

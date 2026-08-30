@@ -14,6 +14,7 @@ import {
   ImageIcon,
   Coffee,
   ExternalLink,
+  Clapperboard,
 } from "lucide-react";
 import { AdSenseBanner } from "@/components/AdSenseBanner";
 import {
@@ -143,6 +144,7 @@ export function VidFlashAutoEditor({
     selectedSfxId: "random",
     enableParticles: false,
     enableGlow: false,
+    enableVintageFilmReel: false,
     enableFilmGrain: false,
     enableOldCinema: false,
     enableGeometricGrid: false,
@@ -571,8 +573,11 @@ export function VidFlashAutoEditor({
         hardwareProfile: studioSettings.hardwareProfile || "balanced",
         fadeInSec: studioSettings.fadeInSec,
         fadeOutSec: studioSettings.fadeOutSec,
+        enableSfx: studioSettings.enableSfx,
+        selectedSfxId: studioSettings.selectedSfxId,
         enableParticles: studioSettings.enableParticles,
         enableGlow: studioSettings.enableGlow,
+        enableVintageFilmReel: studioSettings.enableVintageFilmReel,
         enableFilmGrain: studioSettings.enableFilmGrain,
         enableOldCinema: studioSettings.enableOldCinema,
         enableGeometricGrid: studioSettings.enableGeometricGrid,
@@ -616,7 +621,7 @@ export function VidFlashAutoEditor({
       console.error("Export failed:", err);
       setExportError(err instanceof Error ? err.message : "Video export failed");
       if (typeof document !== "undefined") {
-        document.title = "VidFlash - Videos on Flash!";
+        document.title = "VidFlash - Videos in Flash!";
       }
     } finally {
       abortControllerRef.current = null;
@@ -651,9 +656,15 @@ export function VidFlashAutoEditor({
     setExportError(null);
     setExportProgress(0);
     if (typeof document !== "undefined") {
-      document.title = "VidFlash - Videos on Flash!";
+      document.title = "VidFlash - Videos in Flash!";
     }
   };
+
+  const sanitizedProjectTitle = (projectName || "Video")
+    .trim()
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[/\\?%*:|"<>]/g, "_") || "Video";
+  const finalOutputFileName = `${sanitizedProjectTitle} - Powered by VidFlash.mp4`;
 
   return (
     <div className="w-full max-w-[1920px] mx-auto px-1 sm:px-2 py-1 space-y-2.5">
@@ -759,6 +770,7 @@ export function VidFlashAutoEditor({
             onApplyTransitionToAll={handleApplyTransitionToAll}
             onShuffleTransitions={handleShuffleTransitions}
             onStartRender={handleStartRender}
+            onOpenRenderSettings={openRenderSettingsModal}
           />
         </div>
       </div>
@@ -772,6 +784,7 @@ export function VidFlashAutoEditor({
           currentTimeSec={currentTimeSec}
           totalDurationSec={totalDurationSec}
           selectedClipId={selectedClipId}
+          isPlaying={isPlaying}
           onSelectClip={(id) => setSelectedClipId(id)}
           onSeek={handleSeek}
           onUpdateClipMotion={handleUpdateClipMotion}
@@ -793,15 +806,21 @@ export function VidFlashAutoEditor({
                   <span>Rendering Video</span>
                 </div>
                 <span className="text-slate-600 hidden sm:inline">•</span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10">
+                <a
+                  href="https://buymeacoffee.com/somitrov"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-300 border border-amber-500/35 shadow-sm shadow-amber-500/10 cursor-pointer transition-all hover:scale-105"
+                  title="Support Somit on Buy Me a Coffee"
+                >
                   <Coffee className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-bounce" />
-                  <span>Get Your Coffee Now</span>
-                </span>
+                  <span>☕ Buy Me a Coffee</span>
+                </a>
               </div>
 
               <button
                 onClick={handleClickCloseOrCancel}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 title={!exportedBlobUrl ? "Cancel Rendering" : "Close Modal"}
               >
                 <X className="w-5 h-5" />
@@ -826,9 +845,15 @@ export function VidFlashAutoEditor({
                       <h4 className="text-sm sm:text-base font-bold text-slate-100">
                         Compositing {studioSettings.fps} FPS Video Stream...
                       </h4>
-                      <p className="text-xs text-slate-400 mt-1">
-                        Rendering Ken Burns pan/zoom, transitions, subtitles & audio
-                      </p>
+                      <div className="flex items-center justify-center space-x-1.5 mt-1.5 text-xs text-slate-300">
+                        <span className="text-slate-400 font-medium">Rendering:</span>
+                        <span
+                          className="font-bold text-indigo-300 truncate max-w-[320px] font-mono px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-500/30 shadow-sm"
+                          title={projectName || "Auto-Sync Sequence"}
+                        >
+                          {projectName || "Auto-Sync Sequence"}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Progress Bar */}
@@ -876,12 +901,33 @@ export function VidFlashAutoEditor({
                       </div>
                     </div>
 
-                    {/* Coffee relaxation note */}
-                    <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 text-left flex items-start gap-2.5 text-[11px] text-slate-400">
-                      <Coffee className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <span>
-                        <strong className="text-slate-300">Coffee Break:</strong> Client-side rendering runs locally in your browser with zero cloud queues. Grab a coffee while your video compiles!
-                      </span>
+                    {/* Coffee relaxation & creator support note */}
+                    <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-yellow-500/5 border border-amber-500/30 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5">
+                      <div className="flex items-start gap-2.5 text-xs text-slate-300">
+                        <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                          <Coffee className="w-4 h-4 text-amber-400 animate-pulse" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <strong className="text-white font-bold">Coffee Break Time ☕</strong>
+                            <span className="text-[10px] text-amber-300 font-semibold">• 100% Free Client Render</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                            Client rendering runs locally in your browser. While drinking your coffee, feel free to share a cup of coffee with the creator! ⭐
+                          </p>
+                        </div>
+                      </div>
+
+                      <a
+                        href="https://buymeacoffee.com/somitrov"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer"
+                        title="Support Somit on Buy Me a Coffee"
+                      >
+                        <span>☕ Buy Me a Coffee</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-950" />
+                      </a>
                     </div>
                   </div>
                 )}
@@ -895,6 +941,11 @@ export function VidFlashAutoEditor({
                       <h4 className="text-base font-bold text-white">
                         MP4 Video Successfully Rendered!
                       </h4>
+                      <div className="mt-1.5">
+                        <span className="text-emerald-300 font-bold font-mono text-xs bg-emerald-950/70 border border-emerald-500/30 px-2.5 py-1 rounded-lg inline-block">
+                          {finalOutputFileName}
+                        </span>
+                      </div>
                       <p className="text-xs text-slate-400 mt-1">
                         Rendered at {resolution.width}×{resolution.height} • {studioSettings.fps} FPS on your local CPU.
                       </p>
@@ -903,15 +954,15 @@ export function VidFlashAutoEditor({
                     <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
                       <button
                         onClick={handleCloseRenderModal}
-                        className="w-full sm:flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors"
+                        className="w-full sm:flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-colors cursor-pointer"
                       >
                         Close
                       </button>
 
                       <a
                         href={exportedBlobUrl}
-                        download={`VidFlash - ${projectName.trim().replace(/[/\\?%*:|"<>]/g, "_") || "Video"}.mp4`}
-                        className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-transform"
+                        download={finalOutputFileName}
+                        className="w-full sm:flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] transition-transform cursor-pointer"
                       >
                         <Download className="w-4 h-4" />
                         <span>Download MP4</span>
@@ -929,7 +980,7 @@ export function VidFlashAutoEditor({
                     <p>{exportError}</p>
                     <button
                       onClick={handleCloseRenderModal}
-                      className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white font-semibold text-xs"
+                      className="px-4 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white font-semibold text-xs cursor-pointer"
                     >
                       Dismiss
                     </button>
@@ -958,10 +1009,6 @@ export function VidFlashAutoEditor({
                       hideHeader={true}
                       className="my-0 p-0 border-0 bg-transparent min-h-0 h-full w-full relative z-0"
                     />
-                  </div>
-
-                  <div className="mt-2 text-[10px] text-slate-500 text-center">
-                    <span>Ads keep client-side rendering 100% free with no server subscriptions</span>
                   </div>
                 </div>
               </div>
@@ -1174,7 +1221,7 @@ export function VidFlashAutoEditor({
                       : "bg-slate-800 text-slate-600 cursor-not-allowed opacity-50"
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <Clapperboard className="w-4 h-4 text-amber-300" />
                   <span>Render MP4 Video</span>
                 </button>
               </div>

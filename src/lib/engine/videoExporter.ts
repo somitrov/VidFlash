@@ -7,6 +7,9 @@ import {
   BgmTrackState,
 } from "@/types/autoeditor";
 import { renderCompositorFrame } from "./canvasCompositor";
+import { getFFmpegInstance } from "../ffmpeg";
+import { fetchFile } from "@ffmpeg/util";
+import { getSfxAudioBuffer } from "./sfxEngine";
 
 /**
  * High-Performance Client-Side Video Rendering & Turbo Exporter
@@ -120,6 +123,38 @@ export async function exportVideoClientSide({
     voiceGain.connect(audioDest);
   }
 
+  // Scene Transition Sound Effects (SFX) Track Preload & Graph Construction
+  const sfxNodes: { node: AudioBufferSourceNode; startOffsetSec: number }[] = [];
+  const sfxEnabled = config.enableSfx !== false && config.selectedSfxId !== "none";
+
+  if (sfxEnabled && clips.length > 1) {
+    const sfxGain = audioContext.createGain();
+    sfxGain.gain.value = 0.85; // Crisp audible punch for transition whooshes
+    sfxGain.connect(audioDest);
+
+    // Preload & schedule SFX at every transition / scene cut timestamp
+    for (let i = 1; i < clips.length; i++) {
+      const clip = clips[i];
+      const cutTimeSec = clip.startSec;
+      if (cutTimeSec >= totalDuration) continue;
+
+      try {
+        const sfxBuffer = await getSfxAudioBuffer(
+          config.selectedSfxId || "random",
+          audioContext
+        );
+        if (sfxBuffer) {
+          const sfxSource = audioContext.createBufferSource();
+          sfxSource.buffer = sfxBuffer;
+          sfxSource.connect(sfxGain);
+          sfxNodes.push({ node: sfxSource, startOffsetSec: cutTimeSec });
+        }
+      } catch (err) {
+        console.warn("SFX scheduling notice:", err);
+      }
+    }
+  }
+
   // Background Music (BGM) Track with Auto-Ducking
   let bgmSource: AudioBufferSourceNode | null = null;
   if (bgmTrack && bgmTrack.audioBuffer) {
@@ -127,10 +162,10 @@ export async function exportVideoClientSide({
     bgmSource.buffer = bgmTrack.audioBuffer;
     bgmSource.loop = true; // Auto-loop BGM if video is longer than track
     const bgmGain = audioContext.createGain();
-    const effectiveBgmVolume =
-      bgmTrack.autoDucking && audioTrack
-        ? (bgmTrack.volume ?? 0.5) * 0.5
-        : (bgmTrack.volume ?? 0.5);
+    const isDucked = bgmTrack.autoDucking && (Boolean(audioTrack) || sfxNodes.length > 0);
+    const effectiveBgmVolume = isDucked
+      ? (bgmTrack.duckedVolume ?? (bgmTrack.volume ?? 0.5) * 0.5)
+      : (bgmTrack.volume ?? 0.5);
     bgmGain.gain.value = Math.max(0, Math.min(1, effectiveBgmVolume));
     bgmSource.connect(bgmGain);
     bgmGain.connect(audioDest);
@@ -141,7 +176,11 @@ export async function exportVideoClientSide({
   const combinedStream = new MediaStream();
 
   canvasStream.getVideoTracks().forEach((t) => combinedStream.addTrack(t));
-  if ((audioTrack || bgmTrack) && audioDest.stream.getAudioTracks().length > 0) {
+  const hasAudio =
+    (Boolean(audioTrack) || Boolean(bgmTrack) || sfxNodes.length > 0) &&
+    audioDest.stream.getAudioTracks().length > 0;
+
+  if (hasAudio) {
     audioDest.stream
       .getAudioTracks()
       .forEach((t) => combinedStream.addTrack(t));
@@ -224,6 +263,11 @@ export async function exportVideoClientSide({
       try {
         if (bgmSource) bgmSource.stop();
       } catch {}
+      sfxNodes.forEach(({ node }) => {
+        try {
+          node.stop();
+        } catch {}
+      });
       try {
         if (recorder.state !== "inactive") recorder.stop();
       } catch {}
@@ -235,11 +279,19 @@ export async function exportVideoClientSide({
       signal.addEventListener("abort", handleAbort, { once: true });
     }
 
-    recorder.onstop = () => {
+    recorder.onstop = async () => {
       if (isAborted) return;
       cleanup();
-      const outputBlob = new Blob(recordedChunks, { type: mimeType });
-      resolve(outputBlob);
+      const rawBlob = new Blob(recordedChunks, { type: mimeType });
+      try {
+        onProgress(99, totalDuration);
+        const seekableBlob = await finalizeSeekableMP4(rawBlob, signal);
+        onProgress(100, totalDuration);
+        resolve(seekableBlob);
+      } catch (err) {
+        console.warn("Remuxing warning, falling back to raw output:", err);
+        resolve(rawBlob);
+      }
     };
 
     recorder.onerror = (err) => {
@@ -259,6 +311,13 @@ export async function exportVideoClientSide({
     if (bgmSource) {
       bgmSource.start(0);
     }
+    sfxNodes.forEach(({ node, startOffsetSec }) => {
+      try {
+        node.start(renderStartAudioTime + startOffsetSec);
+      } catch (e) {
+        console.warn("SFX start notice:", e);
+      }
+    });
 
     const frameDurationSec = 1 / fps;
     let frameCount = 0;
@@ -268,7 +327,7 @@ export async function exportVideoClientSide({
       if (isFinished || isAborted || signal?.aborted) return;
 
       // Master Clock Lock: Derive exact playhead directly from WebAudio hardware clock
-      const elapsedSec = (audioSource || bgmSource)
+      const elapsedSec = (audioSource || bgmSource || sfxNodes.length > 0)
         ? Math.max(0, audioContext.currentTime - renderStartAudioTime)
         : (performance.now() - renderStartPerfTime) / 1000;
 
@@ -299,6 +358,7 @@ export async function exportVideoClientSide({
         fadeOutSec: config.fadeOutSec ?? 0.6,
         enableParticles: config.enableParticles ?? false,
         enableGlow: config.enableGlow ?? false,
+        enableVintageFilmReel: config.enableVintageFilmReel ?? false,
         enableFilmGrain: config.enableFilmGrain ?? false,
         enableOldCinema: config.enableOldCinema ?? false,
         enableGeometricGrid: config.enableGeometricGrid ?? false,
@@ -334,4 +394,66 @@ export async function exportVideoClientSide({
     // Trigger initial frame
     worker.postMessage({ action: "schedule", delay: 1 });
   });
+}
+
+/**
+ * Finalizes recorded MP4/WebM into a 100% progressive, seekable MP4 with faststart moov atom.
+ * This fixes the missing duration metadata and fragmented container issues in desktop players
+ * like Windows Media Player / Films & TV and QuickTime.
+ */
+async function finalizeSeekableMP4(
+  rawBlob: Blob,
+  signal?: AbortSignal
+): Promise<Blob> {
+  try {
+    if (signal?.aborted) return rawBlob;
+
+    const ffmpeg = await getFFmpegInstance();
+    const inputExt = rawBlob.type.includes("mp4") ? "mp4" : "webm";
+    const inputName = `raw_stream_${Date.now()}.${inputExt}`;
+    const outputName = `seekable_${Date.now()}.mp4`;
+
+    const fileData = await fetchFile(rawBlob);
+    await ffmpeg.writeFile(inputName, fileData);
+
+    // First attempt: Instant stream copy with +faststart (runs in ~0.2s without re-encoding)
+    let ret = await ffmpeg.exec([
+      "-i", inputName,
+      "-c", "copy",
+      "-movflags", "+faststart",
+      outputName,
+    ]);
+
+    // If stream copy was not directly compatible (e.g. webm VP8/VP9 container), remux with ultrafast H.264
+    if (ret !== 0) {
+      ret = await ffmpeg.exec([
+        "-i", inputName,
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-crf", "18",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-movflags", "+faststart",
+        outputName,
+      ]);
+    }
+
+    if (ret === 0) {
+      const outputData = await ffmpeg.readFile(outputName);
+      try {
+        await ffmpeg.deleteFile(inputName);
+        await ffmpeg.deleteFile(outputName);
+      } catch {}
+
+      const uint8Array = typeof outputData === "string"
+        ? new TextEncoder().encode(outputData)
+        : outputData;
+
+      return new Blob([uint8Array.buffer as ArrayBuffer], { type: "video/mp4" });
+    }
+  } catch (err) {
+    console.warn("FFmpeg faststart remux notice (falling back to direct blob):", err);
+  }
+
+  return rawBlob;
 }

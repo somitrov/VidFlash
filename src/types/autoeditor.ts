@@ -59,6 +59,7 @@ export interface StudioSettings {
   enableParticles: boolean;
   enableGlow: boolean;
   // Visual Effects & Overlays Suite
+  enableVintageFilmReel?: boolean;
   enableFilmGrain?: boolean;
   enableOldCinema?: boolean;
   enableGeometricGrid?: boolean;
@@ -148,8 +149,11 @@ export interface ExportConfig {
   hardwareProfile?: HardwareProfile;
   fadeInSec?: number;
   fadeOutSec?: number;
+  enableSfx?: boolean;
+  selectedSfxId?: string;
   enableParticles?: boolean;
   enableGlow?: boolean;
+  enableVintageFilmReel?: boolean;
   enableFilmGrain?: boolean;
   enableOldCinema?: boolean;
   enableGeometricGrid?: boolean;

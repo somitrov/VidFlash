@@ -22,6 +22,9 @@ import {
   CheckCircle2,
   Play,
   Trash2,
+  Clapperboard,
+  Film,
+  FileText,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -59,6 +62,7 @@ interface StudioControlSidebarProps {
   onApplyTransitionToAll: (transition: TransitionEffect) => void;
   onShuffleTransitions: () => void;
   onStartRender: () => void;
+  onOpenRenderSettings?: () => void;
 }
 
 type InspectorTab = "video" | "audio" | "transitions" | "captions" | "effects";
@@ -107,8 +111,10 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
   onApplyTransitionToAll,
   onShuffleTransitions,
   onStartRender,
+  onOpenRenderSettings,
 }) => {
   const [activeTab, setActiveTab] = useState<InspectorTab>("video");
+  const [scriptFileName, setScriptFileName] = useState<string | null>(null);
   const scriptInputRef = useRef<HTMLInputElement>(null);
   const bgmInputRef = useRef<HTMLInputElement>(null);
 
@@ -116,6 +122,8 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 
   const handleScriptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setScriptFileName(file.name);
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
@@ -124,20 +132,28 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
           onUpdateSubtitles(parsed);
         }
       };
-      reader.readAsText(e.target.files[0]);
+      reader.readAsText(file);
     }
   };
 
   return (
     <div className="bg-[#18181c] border border-[#2b2b36] rounded-xl overflow-hidden shadow-2xl flex flex-col h-[520px]">
-      {/* Video Settings Top Bar */}
+      {/* Video Settings Top Bar (Clickable to open Render Settings Modal) */}
       <div className="bg-[#121215] border-b border-[#2b2b36] px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Sliders className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
+        <button
+          onClick={onOpenRenderSettings}
+          type="button"
+          className="group flex items-center space-x-2 -ml-1.5 px-2 py-0.5 rounded-lg hover:bg-slate-800/80 text-left transition-all cursor-pointer focus:outline-none"
+          title="Click to Open Video Render Settings & Resolution Configuration"
+        >
+          <Sliders className="w-3.5 h-3.5 text-indigo-400 group-hover:text-indigo-300 group-hover:rotate-12 transition-all" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-200 group-hover:text-white font-mono transition-colors">
             Video Settings
           </span>
-        </div>
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-indigo-400 font-sans font-medium flex items-center space-x-0.5 ml-1">
+            <span>⚙️</span>
+          </span>
+        </button>
 
         <span className="text-[10px] font-mono text-slate-500">
           {clips.length} Clips Loaded
@@ -402,6 +418,60 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* ACTIVE SCRIPT FILE NOTIFICATION & METADATA CARD */}
+            {subtitles.length > 0 ? (
+              <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/40 via-teal-950/30 to-slate-900/50 border border-emerald-500/40 shadow-lg shadow-emerald-500/5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                      <FileText className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <span className="text-xs font-bold text-emerald-200 truncate block">
+                          {scriptFileName || "Active Subtitle Script"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-emerald-400/90 font-mono font-medium block">
+                        ✓ {subtitles.length} Cues Loaded • Synced on Timeline
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onUpdateSubtitles([]);
+                      setScriptFileName(null);
+                      if (scriptInputRef.current) scriptInputRef.current.value = "";
+                    }}
+                    title="Remove Loaded Script"
+                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors shrink-0 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Subtitle Script Cue 1 Preview Snippet */}
+                {subtitles[0] && (
+                  <div className="bg-[#121215]/90 rounded-lg p-2 border border-emerald-500/20 text-[11px] text-slate-300">
+                    <div className="flex items-center justify-between text-[9px] font-mono text-emerald-400/80 mb-1">
+                      <span className="font-semibold uppercase tracking-wider">Preview (Cue 1)</span>
+                      <span>{subtitles[0].startSec.toFixed(1)}s - {subtitles[0].endSec.toFixed(1)}s</span>
+                    </div>
+                    <p className="line-clamp-2 italic text-slate-200 text-[11px] bg-slate-900/60 px-2 py-1 rounded border border-[#2b2b36]">
+                      &ldquo;{subtitles[0].text}&rdquo;
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl border border-dashed border-[#2b2b36] bg-[#121215]/40 text-center space-y-1">
+                <FileText className="w-4 h-4 text-slate-600 mx-auto" />
+                <p className="text-[11px] text-slate-400 font-medium">No script or subtitle file loaded</p>
+                <p className="text-[9px] text-slate-500">Import a .txt or .srt file above to sync captions</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -716,8 +786,50 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               </div>
             </div>
 
+            {/* MASTER PRESET: VINTAGE ARCHIVAL FILM REEL */}
+            <div className="p-3 rounded-xl bg-gradient-to-r from-amber-950/40 via-yellow-950/30 to-orange-950/20 border border-amber-500/40 shadow-lg shadow-amber-500/5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                    <Film className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-amber-200 block">
+                      Vintage Archival Film Reel
+                    </span>
+                    <span className="text-[9px] font-mono text-amber-400/90 uppercase tracking-wider font-semibold">
+                      🎞️ Ken Burns • Gate Weave • 16mm Film FX
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    onUpdateSettings({
+                      enableVintageFilmReel: !settings.enableVintageFilmReel,
+                    })
+                  }
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                    settings.enableVintageFilmReel
+                      ? "bg-amber-500 shadow-md shadow-amber-500/30"
+                      : "bg-slate-800"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      settings.enableVintageFilmReel
+                        ? "translate-x-4"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+              <p className="text-[10px] text-slate-300 leading-relaxed">
+                Applies a subtle continuous Ken Burns motion, authentic projector film gate-weave jitter, fine 16mm grain, faint scratches, dust specks, light flicker & faded archival vintage tone in one click.
+              </p>
+            </div>
+
             {/* SECTION 1: FILM & PROJECTOR OVERLAYS */}
-            <div className="space-y-2">
+            <div className="space-y-2 pt-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
                 🎞️ Film & Projector Overlays
               </span>
@@ -738,13 +850,103 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                       enableOldCinema: !settings.enableOldCinema,
                     })
                   }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
                     settings.enableOldCinema ? "bg-amber-500" : "bg-slate-800"
                   }`}
                 >
                   <div
                     className={`w-4 h-4 rounded-full bg-white transition-transform ${
                       settings.enableOldCinema
+                        ? "translate-x-4"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* 2. 16mm Film Grain & Scratches */}
+              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    16mm Film Grain & Scratches
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Authentic optical film noise & vertical jitter lines
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    onUpdateSettings({
+                      enableFilmGrain: !settings.enableFilmGrain,
+                    })
+                  }
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                    settings.enableFilmGrain ? "bg-amber-500" : "bg-slate-800"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      settings.enableFilmGrain
+                        ? "translate-x-4"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* 3. Vintage Warm Sepia Tone */}
+              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    Vintage Warm Sepia Tone
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Classic 1920s historical warm sepia color grading
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    onUpdateSettings({
+                      enableVintageSepia: !settings.enableVintageSepia,
+                    })
+                  }
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                    settings.enableVintageSepia ? "bg-orange-500" : "bg-slate-800"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                      settings.enableVintageSepia
+                        ? "translate-x-4"
+                        : "translate-x-0"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* 4. Archival Black & White Monochrome */}
+              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold text-slate-200">
+                    Archival B&W Monochrome
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    High-contrast historical black & white film grade
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    onUpdateSettings({
+                      enableBlackAndWhite: !settings.enableBlackAndWhite,
+                    })
+                  }
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                    settings.enableBlackAndWhite ? "bg-slate-300" : "bg-slate-800"
+                  }`}
+                >
+                  <div
+                    className={`w-4 h-4 rounded-full bg-slate-950 transition-transform ${
+                      settings.enableBlackAndWhite
                         ? "translate-x-4"
                         : "translate-x-0"
                     }`}
@@ -759,7 +961,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                 🎬 Cinema & Optics Overlays
               </span>
 
-              {/* 2. Cinemascope Letterbox */}
+              {/* 5. Cinemascope Letterbox */}
               <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">
@@ -775,7 +977,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                       enableLetterbox: !settings.enableLetterbox,
                     })
                   }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
                     settings.enableLetterbox ? "bg-cyan-600" : "bg-slate-800"
                   }`}
                 >
@@ -789,7 +991,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                 </button>
               </div>
 
-              {/* 3. Floating Golden Particles */}
+              {/* 6. Floating Golden Particles */}
               <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
                 <div>
                   <div className="text-xs font-semibold text-slate-200">
@@ -805,7 +1007,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                       enableParticles: !settings.enableParticles,
                     })
                   }
-                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 ${
+                  className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
                     settings.enableParticles ? "bg-amber-500" : "bg-slate-800"
                   }`}
                 >
@@ -836,7 +1038,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               : "bg-slate-800 text-slate-600 cursor-not-allowed opacity-50"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+          <Clapperboard className="w-3.5 h-3.5 text-amber-300" />
           <span>{isExporting ? `Rendering (${exportProgress}%)` : "Render MP4 Video"}</span>
         </button>
       </div>

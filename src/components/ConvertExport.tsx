@@ -180,7 +180,7 @@ export const ConvertExport: React.FC<ConvertExportProps> = ({
     const a = document.createElement("a");
     a.href = outputBlobUrl;
     const baseName = mediaState.fileName.replace(/\.[^/.]+$/, "");
-    a.download = `${baseName}_YouTubeReady.mp4`;
+    a.download = `${baseName} - Powered by VidFlash.mp4`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

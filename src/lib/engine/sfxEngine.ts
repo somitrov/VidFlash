@@ -194,5 +194,44 @@ export function playAudioSfx(sfxId?: string) {
   }
 }
 
+// WebAudio buffer cache for offline export & video rendering
+const sfxBufferCache: Map<string, AudioBuffer> = new Map();
+
+/**
+ * Decodes and returns an AudioBuffer for a given SFX ID or random transition sound.
+ * Cached in memory to ensure instantaneous reuse across scene cuts.
+ */
+export async function getSfxAudioBuffer(
+  sfxId: string | undefined,
+  audioContext: AudioContext
+): Promise<AudioBuffer | null> {
+  if (typeof window === "undefined" || !sfxId || sfxId === "none") return null;
+
+  const targetId = sfxId === "random" ? getRandomTransitionSfxId() : sfxId;
+  const sfxItem =
+    SFX_LIBRARY.find((item) => item.id === targetId) || SFX_LIBRARY[0];
+  if (!sfxItem) return null;
+
+  if (sfxBufferCache.has(sfxItem.file)) {
+    return sfxBufferCache.get(sfxItem.file)!;
+  }
+
+  try {
+    const res = await fetch(sfxItem.file);
+    if (!res.ok) {
+      console.warn(`SFX file fetch failed (${res.status}): ${sfxItem.file}`);
+      return null;
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    // Use clone of arrayBuffer because decodeAudioData detaches the buffer
+    const decodedBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    sfxBufferCache.set(sfxItem.file, decodedBuffer);
+    return decodedBuffer;
+  } catch (err) {
+    console.warn(`Failed to decode SFX buffer for ${sfxItem.file}:`, err);
+    return null;
+  }
+}
+
 // Fallback alias for backward compatibility
 export const playSynthesizedSfx = (sfxId?: string) => playAudioSfx(sfxId);

@@ -3,14 +3,16 @@
 import React, { useState, useRef } from "react";
 import { Navbar } from "@/components/Navbar";
 import { FAQSection, AboutSection, LegalModal } from "@/components/LegalContent";
-import { ShieldCheck, Cpu, Video, FileText, Lock, Mail, Mic, PlaySquare } from "lucide-react";
+import { Sparkles, ShieldCheck, Cpu, Video, FileText, Lock, Mail, Mic, PlaySquare } from "lucide-react";
 import { VidFlashFlow } from "@/components/VidFlashFlow";
 import { VidFlashAutoEditor } from "@/components/autoeditor/VidFlashAutoEditor";
+import { PremiumModal } from "@/components/PremiumModal";
 
 export default function Home() {
   const [mode, setMode] = useState<"gateway" | "vidflash" | "audiobook">("gateway");
   const [legalModalType, setLegalModalType] = useState<"privacy" | "terms" | "contact" | "sale" | null>(null);
   const [isRenderSettingsOpen, setIsRenderSettingsOpen] = useState<boolean>(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState<boolean>(false);
 
   const faqRef = useRef<HTMLDivElement>(null);
 
@@ -31,12 +33,7 @@ export default function Home() {
         onOpenLegal={(type) => setLegalModalType(type)}
         onScrollToFAQ={scrollToFAQ}
         onGoHome={() => setMode("gateway")}
-        onOpenRenderSettings={() => {
-          if (mode !== "audiobook") {
-            setMode("audiobook");
-          }
-          setIsRenderSettingsOpen(true);
-        }}
+        onOpenPremium={() => setIsPremiumModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -178,7 +175,7 @@ export default function Home() {
               className="flex items-center space-x-1.5 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
               title="View On Sale Details"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>On Sale</span>
             </button>
           </div>
@@ -190,6 +187,12 @@ export default function Home() {
         type={legalModalType}
         onClose={() => setLegalModalType(null)}
         onSwitchType={(type) => setLegalModalType(type)}
+      />
+
+      {/* Premium & Pricing Plans Modal */}
+      <PremiumModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
       />
     </div>
   );

@@ -166,6 +166,7 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
       fadeOutSec: settings.fadeOutSec,
       enableParticles: settings.enableParticles,
       enableGlow: settings.enableGlow,
+      enableVintageFilmReel: settings.enableVintageFilmReel,
       enableFilmGrain: settings.enableFilmGrain,
       enableOldCinema: settings.enableOldCinema,
       enableGeometricGrid: settings.enableGeometricGrid,
