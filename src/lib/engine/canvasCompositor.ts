@@ -5,6 +5,11 @@ import {
   MotionEffect,
   TransitionEffect,
 } from "@/types/autoeditor";
+import {
+  getOrExtractDoodleVectorData,
+  evaluateDoodlePositionAtProgress,
+  DetectedBgColor,
+} from "./edgeTracer";
 
 /**
  * High-performance, clean-room 60FPS Video Canvas Compositor
@@ -35,6 +40,10 @@ export function renderCompositorFrame({
   enableLetterbox = false,
   enablePrismGlow = false,
   enableVintageSepia = false,
+  enableDoodle = false,
+  enableDoodleZoom = false,
+  doodleDrawDurationRatio = 0.75,
+  doodlePaperStyle = "auto",
 }: {
   ctx: CanvasRenderingContext2D;
   width: number;
@@ -57,13 +66,37 @@ export function renderCompositorFrame({
   enableLetterbox?: boolean;
   enablePrismGlow?: boolean;
   enableVintageSepia?: boolean;
+  enableDoodle?: boolean;
+  enableDoodleZoom?: boolean;
+  doodleDrawDurationRatio?: number;
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
 }) {
-  // 1. Base dark stage
+  // 1. Base Stage Background
   ctx.save();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.fillStyle = "#020617";
-  ctx.fillRect(0, 0, width, height);
+
+  if (enableDoodle) {
+    // Find active clip for auto background matching
+    const activeClip = clips.find(
+      (c) => currentTimeSec >= c.startSec && currentTimeSec < c.endSec
+    ) || clips[0];
+    let detectedBg: DetectedBgColor | undefined;
+    if (activeClip) {
+      const mediaSource =
+        activeClip.fileType === "video"
+          ? activeClip.videoElement
+          : activeClip.imageElement;
+      if (mediaSource) {
+        const vData = getOrExtractDoodleVectorData(mediaSource);
+        detectedBg = vData.detectedBgColor;
+      }
+    }
+    renderPaperBackground(ctx, width, height, doodlePaperStyle, detectedBg);
+  } else {
+    ctx.fillStyle = "#020617";
+    ctx.fillRect(0, 0, width, height);
+  }
 
   // Setup color filters for media render
   let baseFilter = "none";
@@ -94,53 +127,99 @@ export function renderCompositorFrame({
       )
     );
 
-    // Check transition overlap with next clip
-    const timeRemaining = currentClip.endSec - currentTimeSec;
-    const isTransitioning =
-      nextClip &&
-      nextClip.transition !== "cut" &&
-      timeRemaining <= (nextClip.transitionDuration || 0.6);
-
-    if (isTransitioning && nextClip) {
-      const transDuration = Math.max(0.1, nextClip.transitionDuration || 0.6);
-      const transProgress = Math.max(
-        0,
-        Math.min(1, 1 - timeRemaining / transDuration)
-      );
-
-      const incomingProgress = Math.max(
-        0,
-        Math.min(
-          1,
-          (currentTimeSec - nextClip.startSec) /
-            Math.max(0.1, nextClip.durationSec)
-        )
-      );
-
-      // Render transition composite
-      ctx.save();
-      renderTransitionComposite(
+    if (enableDoodle) {
+      // Doodle Whiteboard Hand-Drawn Animation
+      renderDoodleClip({
         ctx,
-        currentClip,
-        nextClip,
+        clip: currentClip,
         clipProgress,
-        incomingProgress,
-        transProgress,
-        nextClip.transition,
-        width,
-        height,
-        baseFilter,
-        enableVintageFilmReel,
-        currentTimeSec
-      );
-      ctx.restore();
+        canvasWidth: width,
+        canvasHeight: height,
+        drawDurationRatio: doodleDrawDurationRatio,
+        paperStyle: doodlePaperStyle,
+        enableDoodleZoom,
+        currentTimeSec,
+      });
     } else {
-      // Normal single clip rendering with Ken Burns
+      // Check transition overlap with next clip
+      const timeRemaining = currentClip.endSec - currentTimeSec;
+      const isTransitioning =
+        nextClip &&
+        nextClip.transition !== "cut" &&
+        timeRemaining <= (nextClip.transitionDuration || 0.6);
+
+      if (isTransitioning && nextClip) {
+        const transDuration = Math.max(0.1, nextClip.transitionDuration || 0.6);
+        const transProgress = Math.max(
+          0,
+          Math.min(1, 1 - timeRemaining / transDuration)
+        );
+
+        const incomingProgress = Math.max(
+          0,
+          Math.min(
+            1,
+            (currentTimeSec - nextClip.startSec) /
+              Math.max(0.1, nextClip.durationSec)
+          )
+        );
+
+        // Render transition composite
+        ctx.save();
+        renderTransitionComposite(
+          ctx,
+          currentClip,
+          nextClip,
+          clipProgress,
+          incomingProgress,
+          transProgress,
+          nextClip.transition,
+          width,
+          height,
+          baseFilter,
+          enableVintageFilmReel,
+          currentTimeSec
+        );
+        ctx.restore();
+      } else {
+        // Normal single clip rendering with Ken Burns
+        ctx.save();
+        renderSingleClip(
+          ctx,
+          currentClip,
+          clipProgress,
+          width,
+          height,
+          1.0,
+          baseFilter,
+          enableVintageFilmReel,
+          currentTimeSec
+        );
+        ctx.restore();
+      }
+    }
+  } else if (clips.length > 0) {
+    // Clamped fallback to first or last clip
+    const fallbackClip =
+      currentTimeSec <= 0 ? clips[0] : clips[clips.length - 1];
+    if (enableDoodle) {
+      renderDoodleClip({
+        ctx,
+        clip: fallbackClip,
+        clipProgress: 1.0,
+        canvasWidth: width,
+        canvasHeight: height,
+        drawDurationRatio: doodleDrawDurationRatio,
+        paperStyle: doodlePaperStyle,
+        enableDoodleZoom,
+        currentTimeSec,
+      });
+    } else {
       ctx.save();
       renderSingleClip(
         ctx,
-        currentClip,
-        clipProgress,
+        fallbackClip,
+        1.0,
         width,
         height,
         1.0,
@@ -150,23 +229,6 @@ export function renderCompositorFrame({
       );
       ctx.restore();
     }
-  } else if (clips.length > 0) {
-    // Clamped fallback to first or last clip
-    const fallbackClip =
-      currentTimeSec <= 0 ? clips[0] : clips[clips.length - 1];
-    ctx.save();
-    renderSingleClip(
-      ctx,
-      fallbackClip,
-      1.0,
-      width,
-      height,
-      1.0,
-      baseFilter,
-      enableVintageFilmReel,
-      currentTimeSec
-    );
-    ctx.restore();
   }
 
   // Reset filter for procedural overlays
@@ -919,6 +981,384 @@ function renderTransitionComposite(
       break;
     }
   }
+}
+
+let cachedHandImg: HTMLImageElement | null = null;
+function getCachedHandImage(): HTMLImageElement | null {
+  if (typeof window === "undefined") return null;
+  if (!cachedHandImg) {
+    cachedHandImg = new Image();
+    cachedHandImg.src = "/assets/hand.png";
+  }
+  return cachedHandImg;
+}
+
+let offscreenDoodleCanvas: HTMLCanvasElement | null = null;
+function getOffscreenCanvas(w: number, h: number): HTMLCanvasElement {
+  if (!offscreenDoodleCanvas) {
+    offscreenDoodleCanvas = document.createElement("canvas");
+  }
+  if (offscreenDoodleCanvas.width !== w || offscreenDoodleCanvas.height !== h) {
+    offscreenDoodleCanvas.width = w;
+    offscreenDoodleCanvas.height = h;
+  }
+  return offscreenDoodleCanvas;
+}
+
+/**
+ * Renders Whiteboard / Paper background textures for Doodle mode with auto-color matching
+ */
+function renderPaperBackground(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  style: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard" = "auto",
+  detectedBg?: DetectedBgColor
+) {
+  ctx.save();
+  const fillX = -width * 2;
+  const fillY = -height * 2;
+  const fillW = width * 5;
+  const fillH = height * 5;
+
+  if (style === "chalkboard") {
+    // Charcoal matte chalkboard
+    ctx.fillStyle = "#18181b";
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+    const rad = ctx.createRadialGradient(
+      width / 2,
+      height / 2,
+      width * 0.2,
+      width / 2,
+      height / 2,
+      width * 0.75
+    );
+    rad.addColorStop(0, "rgba(255, 255, 255, 0.03)");
+    rad.addColorStop(1, "rgba(0, 0, 0, 0.5)");
+    ctx.fillStyle = rad;
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+  } else if (style === "blueprint") {
+    // Technical blueprint navy with grid
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.12)";
+    ctx.lineWidth = 1;
+    const gridSpacing = Math.max(24, Math.round(width * 0.035));
+    ctx.beginPath();
+    for (let x = fillX; x < fillX + fillW; x += gridSpacing) {
+      ctx.moveTo(x, fillY);
+      ctx.lineTo(x, fillY + fillH);
+    }
+    for (let y = fillY; y < fillY + fillH; y += gridSpacing) {
+      ctx.moveTo(fillX, y);
+      ctx.lineTo(fillX + fillW, y);
+    }
+    ctx.stroke();
+  } else if (style === "paper") {
+    // Vintage sketch parchment
+    ctx.fillStyle = "#f5f0e6";
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+    const rad = ctx.createRadialGradient(
+      width / 2,
+      height / 2,
+      width * 0.3,
+      width / 2,
+      height / 2,
+      width * 0.8
+    );
+    rad.addColorStop(0, "rgba(255, 255, 255, 0)");
+    rad.addColorStop(1, "rgba(180, 150, 110, 0.25)");
+    ctx.fillStyle = rad;
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+  } else {
+    // "auto" or "whiteboard": Pure flat #EAEAEA canvas background matching
+    const isAuto = style === "auto";
+    const hasImageBg = detectedBg && !detectedBg.isTransparent;
+    const bgColorHex =
+      isAuto && hasImageBg
+        ? detectedBg.hex
+        : style === "whiteboard"
+        ? "#EAEAEA"
+        : hasImageBg
+        ? detectedBg.hex
+        : "#EAEAEA";
+
+    ctx.fillStyle = bgColorHex;
+    ctx.fillRect(fillX, fillY, fillW, fillH);
+
+    // If dark background (e.g. chalkboard or dark image), apply subtle contrast
+    if (detectedBg?.isDark) {
+      const rad = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        width * 0.25,
+        width / 2,
+        height / 2,
+        width * 0.8
+      );
+      rad.addColorStop(0, "rgba(255, 255, 255, 0.03)");
+      rad.addColorStop(1, "rgba(0, 0, 0, 0.35)");
+      ctx.fillStyle = rad;
+      ctx.fillRect(fillX, fillY, fillW, fillH);
+    }
+  }
+  ctx.restore();
+}
+
+/**
+ * Renders progressive hand-drawn whiteboard doodle animation with point-to-point edge contour tracing
+ */
+function renderDoodleClip({
+  ctx,
+  clip,
+  clipProgress,
+  canvasWidth,
+  canvasHeight,
+  drawDurationRatio = 0.75,
+  paperStyle = "auto",
+  enableDoodleZoom = false,
+  currentTimeSec = 0,
+}: {
+  ctx: CanvasRenderingContext2D;
+  clip: TimelineClip;
+  clipProgress: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  drawDurationRatio?: number;
+  paperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
+  enableDoodleZoom?: boolean;
+  currentTimeSec: number;
+}) {
+  const mediaSource =
+    clip.fileType === "video" ? clip.videoElement : clip.imageElement;
+  if (!mediaSource) return;
+
+  const srcWidth =
+    clip.fileType === "video"
+      ? clip.videoElement?.videoWidth || 1920
+      : clip.imageElement?.naturalWidth || 1920;
+  const srcHeight =
+    clip.fileType === "video"
+      ? clip.videoElement?.videoHeight || 1080
+      : clip.imageElement?.naturalHeight || 1080;
+
+  // Fit image proportionally within the canvas
+  const paddingRatio = 0.90;
+  const scaleRatio = Math.min(
+    (canvasWidth * paddingRatio) / srcWidth,
+    (canvasHeight * paddingRatio) / srcHeight
+  );
+  const targetW = srcWidth * scaleRatio;
+  const targetH = srcHeight * scaleRatio;
+  const imgX = (canvasWidth - targetW) / 2;
+  const imgY = (canvasHeight - targetH) / 2;
+
+  const safeDrawRatio = Math.max(0.3, Math.min(0.95, drawDurationRatio));
+  const drawProgress = Math.max(0, Math.min(1, clipProgress / safeDrawRatio));
+
+  // Extract / retrieve cached vector contours with auto background color
+  const vectorData = getOrExtractDoodleVectorData(mediaSource);
+  const {
+    tipXNorm,
+    tipYNorm,
+    completedStrokes,
+    strokeProgress,
+  } = evaluateDoodlePositionAtProgress(vectorData, drawProgress);
+
+  const baseTipX = imgX + tipXNorm * targetW;
+  const baseTipY = imgY + tipYNorm * targetH;
+
+  // Realistic marker scribbling micro-jitter
+  const isActivelyDrawing = drawProgress < 1.0;
+  const jitterX = isActivelyDrawing
+    ? Math.sin(currentTimeSec * 45) * (canvasWidth * 0.0035) +
+      Math.cos(currentTimeSec * 29) * (canvasWidth * 0.002)
+    : 0;
+  const jitterY = isActivelyDrawing
+    ? Math.cos(currentTimeSec * 48) * (canvasHeight * 0.0035) +
+      Math.sin(currentTimeSec * 31) * (canvasHeight * 0.002)
+    : 0;
+
+  const markerTipX = Math.max(0, Math.min(canvasWidth, baseTipX + jitterX));
+  const markerTipY = Math.max(0, Math.min(canvasHeight, baseTipY + jitterY));
+
+  ctx.save();
+
+  // Dynamic Camera Focus Zoom & Follow (Point-to-Point Doodly Tracking)
+  if (enableDoodleZoom && isActivelyDrawing) {
+    const zoomProgress =
+      drawProgress > 0.88
+        ? (1 - drawProgress) / 0.12
+        : Math.min(1, drawProgress / 0.08);
+    const zoomScale = 1.0 + 0.42 * easeInOutQuad(zoomProgress);
+
+    const maxShiftX = (canvasWidth * (zoomScale - 1)) / (2 * zoomScale);
+    const maxShiftY = (canvasHeight * (zoomScale - 1)) / (2 * zoomScale);
+    const camX = Math.max(
+      canvasWidth / 2 - maxShiftX,
+      Math.min(canvasWidth / 2 + maxShiftX, markerTipX)
+    );
+    const camY = Math.max(
+      canvasHeight / 2 - maxShiftY,
+      Math.min(canvasHeight / 2 + maxShiftY, markerTipY)
+    );
+
+    ctx.translate(canvasWidth / 2, canvasHeight / 2);
+    ctx.scale(zoomScale, zoomScale);
+    ctx.translate(-camX, -camY);
+  }
+
+  // 1. Draw Paper / Whiteboard Canvas Background with matched image background color
+  renderPaperBackground(
+    ctx,
+    canvasWidth,
+    canvasHeight,
+    paperStyle,
+    vectorData.detectedBgColor
+  );
+
+  // 2. Progressive Stroke-by-Stroke Line-Art Masking
+  try {
+    const offscreen = getOffscreenCanvas(canvasWidth, canvasHeight);
+    const offCtx = offscreen.getContext("2d");
+    if (offCtx) {
+      offCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      offCtx.save();
+
+      if (drawProgress >= 1.0) {
+        // 100% Revealed
+        offCtx.fillStyle = "#ffffff";
+        offCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+      } else {
+        const strokeLineWidth = Math.max(16, targetW * 0.032);
+        offCtx.strokeStyle = "#ffffff";
+        offCtx.fillStyle = "#ffffff";
+        offCtx.lineWidth = strokeLineWidth;
+        offCtx.lineCap = "round";
+        offCtx.lineJoin = "round";
+
+        const strokes = vectorData.strokes;
+
+        // Draw all completed strokes
+        for (let s = 0; s < completedStrokes && s < strokes.length; s++) {
+          const pts = strokes[s].points;
+          if (pts.length >= 2) {
+            offCtx.beginPath();
+            offCtx.moveTo(imgX + pts[0].x * targetW, imgY + pts[0].y * targetH);
+            for (let p = 1; p < pts.length; p++) {
+              offCtx.lineTo(
+                imgX + pts[p].x * targetW,
+                imgY + pts[p].y * targetH
+              );
+            }
+            offCtx.stroke();
+          }
+        }
+
+        // Draw active stroke up to current needle point
+        if (completedStrokes < strokes.length) {
+          const activePts = strokes[completedStrokes].points;
+          if (activePts.length >= 2) {
+            offCtx.beginPath();
+            offCtx.moveTo(
+              imgX + activePts[0].x * targetW,
+              imgY + activePts[0].y * targetH
+            );
+            const numPtsToDraw = Math.max(
+              1,
+              Math.floor(strokeProgress * (activePts.length - 1))
+            );
+            for (let p = 1; p <= numPtsToDraw; p++) {
+              offCtx.lineTo(
+                imgX + activePts[p].x * targetW,
+                imgY + activePts[p].y * targetH
+              );
+            }
+            offCtx.lineTo(baseTipX, baseTipY);
+            offCtx.stroke();
+          }
+        }
+
+        // Scribble circle cap directly at marker tip
+        offCtx.beginPath();
+        offCtx.arc(markerTipX, markerTipY, strokeLineWidth * 1.25, 0, Math.PI * 2);
+        offCtx.fill();
+      }
+
+      // Composite sketch image through reveal mask
+      offCtx.globalCompositeOperation = "source-in";
+      if (paperStyle === "chalkboard") {
+        offCtx.filter =
+          "grayscale(100%) invert(100%) contrast(180%) brightness(120%)";
+        offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
+        offCtx.restore();
+        ctx.drawImage(offscreen, 0, 0);
+      } else if (paperStyle === "blueprint") {
+        offCtx.filter =
+          "grayscale(100%) invert(100%) contrast(150%) sepia(100%) hue-rotate(180deg) saturate(200%)";
+        offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
+        offCtx.restore();
+        ctx.drawImage(offscreen, 0, 0);
+      } else {
+        // High-contrast ink extraction + Multiply compositing:
+        // Pushes any white/light paper background to pure white #FFFFFF
+        // and sharpens marker ink to pure #000000
+        offCtx.filter = "grayscale(100%) contrast(220%) brightness(105%)";
+        offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
+        offCtx.restore();
+
+        // In multiply blend mode, pure white (#FFFFFF) becomes 100% transparent on #EAEAEA,
+        // drawing ONLY the black marker lines directly onto the #EAEAEA canvas!
+        ctx.save();
+        ctx.globalCompositeOperation = "multiply";
+        ctx.drawImage(offscreen, 0, 0);
+        ctx.restore();
+      }
+    }
+  } catch {}
+
+  // 3. Render Hand with Marker Pen pinned at (markerTipX, markerTipY)
+  const handImg = getCachedHandImage();
+  if (handImg && handImg.complete && handImg.naturalWidth > 0) {
+    const handScale = (canvasWidth * 0.82) / handImg.naturalWidth;
+    const handW = handImg.naturalWidth * handScale;
+    const handH = handImg.naturalHeight * handScale;
+
+    // Calibrated EXPO Marker Tip Anchor
+    const TIP_X_RATIO = 0.201;
+    const TIP_Y_RATIO = 0.355;
+
+    let handX = markerTipX - TIP_X_RATIO * handW;
+    let handY = markerTipY - TIP_Y_RATIO * handH;
+
+    // Slide hand off-screen when drawing is finished
+    let shouldDrawHand = true;
+    if (drawProgress >= 1.0) {
+      const exitProgress = Math.min(
+        1,
+        (clipProgress - safeDrawRatio) / Math.max(0.05, 1 - safeDrawRatio)
+      );
+      const slideDist = easeInOutQuad(exitProgress) * canvasHeight * 1.3;
+      handX += slideDist * 0.75;
+      handY += slideDist;
+      if (exitProgress >= 1.0) {
+        shouldDrawHand = false;
+      }
+    }
+
+    if (shouldDrawHand) {
+      ctx.save();
+      // Natural soft hand shadow for depth
+      ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
+      ctx.shadowBlur = Math.round(16 * (canvasWidth / 1920));
+      ctx.shadowOffsetX = Math.round(12 * (canvasWidth / 1920));
+      ctx.shadowOffsetY = Math.round(14 * (canvasWidth / 1920));
+      ctx.drawImage(handImg, handX, handY, handW, handH);
+      ctx.restore();
+    }
+  }
+
+  ctx.restore();
 }
 
 /**

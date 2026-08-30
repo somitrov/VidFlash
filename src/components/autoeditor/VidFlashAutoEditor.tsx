@@ -153,6 +153,10 @@ export function VidFlashAutoEditor({
     enableLetterbox: false,
     enablePrismGlow: false,
     enableVintageSepia: false,
+    enableDoodle: false,
+    enableDoodleZoom: false,
+    doodleDrawDurationRatio: 0.75,
+    doodlePaperStyle: "auto",
   });
 
   const [currentTimeSec, setCurrentTimeSec] = useState<number>(0);
@@ -586,6 +590,10 @@ export function VidFlashAutoEditor({
         enableLetterbox: studioSettings.enableLetterbox,
         enablePrismGlow: studioSettings.enablePrismGlow,
         enableVintageSepia: studioSettings.enableVintageSepia,
+        enableDoodle: studioSettings.enableDoodle,
+        enableDoodleZoom: studioSettings.enableDoodleZoom,
+        doodleDrawDurationRatio: studioSettings.doodleDrawDurationRatio ?? 0.75,
+        doodlePaperStyle: studioSettings.doodlePaperStyle ?? "auto",
       };
 
       const blob = await exportVideoClientSide({

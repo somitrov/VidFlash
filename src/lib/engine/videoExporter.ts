@@ -367,6 +367,10 @@ export async function exportVideoClientSide({
         enableLetterbox: config.enableLetterbox ?? false,
         enablePrismGlow: config.enablePrismGlow ?? false,
         enableVintageSepia: config.enableVintageSepia ?? false,
+        enableDoodle: config.enableDoodle ?? false,
+        enableDoodleZoom: config.enableDoodleZoom ?? false,
+        doodleDrawDurationRatio: config.doodleDrawDurationRatio ?? 0.75,
+        doodlePaperStyle: config.doodlePaperStyle ?? "auto",
       });
 
       frameCount++;

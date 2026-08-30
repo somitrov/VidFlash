@@ -175,6 +175,10 @@ export const StudioPreview: React.FC<StudioPreviewProps> = ({
       enableLetterbox: settings.enableLetterbox,
       enablePrismGlow: settings.enablePrismGlow,
       enableVintageSepia: settings.enableVintageSepia,
+      enableDoodle: settings.enableDoodle,
+      enableDoodleZoom: settings.enableDoodleZoom,
+      doodleDrawDurationRatio: settings.doodleDrawDurationRatio ?? 0.75,
+      doodlePaperStyle: settings.doodlePaperStyle ?? "auto",
     });
   }, [
     currentTimeSec,

@@ -68,6 +68,11 @@ export interface StudioSettings {
   enableLetterbox?: boolean;
   enablePrismGlow?: boolean;
   enableVintageSepia?: boolean;
+  // Doodle & Whiteboard Animation Suite
+  enableDoodle?: boolean;
+  enableDoodleZoom?: boolean;
+  doodleDrawDurationRatio?: number;
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
 }
 
 export interface TimelineClip {
@@ -162,4 +167,9 @@ export interface ExportConfig {
   enableLetterbox?: boolean;
   enablePrismGlow?: boolean;
   enableVintageSepia?: boolean;
+  // Doodle Whiteboard Suite
+  enableDoodle?: boolean;
+  enableDoodleZoom?: boolean;
+  doodleDrawDurationRatio?: number;
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
 }

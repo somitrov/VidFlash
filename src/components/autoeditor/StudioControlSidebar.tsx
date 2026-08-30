@@ -25,6 +25,7 @@ import {
   Clapperboard,
   Film,
   FileText,
+  Pencil,
 } from "lucide-react";
 import {
   TimelineClip,
@@ -40,6 +41,7 @@ import {
 import { formatSecondsToTimecode } from "@/lib/engine/timestampParser";
 import { parseScriptOrSRTContent } from "./StudioSubtitlesPanel";
 import { SFX_LIBRARY, playAudioSfx } from "@/lib/engine/sfxEngine";
+import { StudioSubtitleEditorModal } from "./StudioSubtitleEditorModal";
 
 interface StudioControlSidebarProps {
   clips: TimelineClip[];
@@ -65,7 +67,7 @@ interface StudioControlSidebarProps {
   onOpenRenderSettings?: () => void;
 }
 
-type InspectorTab = "video" | "audio" | "transitions" | "captions" | "effects";
+type InspectorTab = "video" | "audio" | "transitions" | "captions" | "effects" | "doodle";
 
 const TRANSITION_OPTIONS: { id: TransitionEffect; label: string; icon: string; category?: string }[] = [
   { id: "crossfade", label: "Crossfade Dissolve", icon: "✦" },
@@ -115,6 +117,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<InspectorTab>("video");
   const [scriptFileName, setScriptFileName] = useState<string | null>(null);
+  const [isSubtitleEditorOpen, setIsSubtitleEditorOpen] = useState<boolean>(false);
   const scriptInputRef = useRef<HTMLInputElement>(null);
   const bgmInputRef = useRef<HTMLInputElement>(null);
 
@@ -225,6 +228,19 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
         >
           <Sparkle className="w-3.5 h-3.5 text-pink-400" />
           <span>Effects</span>
+        </button>
+
+        {/* Tab 6: Doodle Whiteboard */}
+        <button
+          onClick={() => setActiveTab("doodle")}
+          className={`flex items-center space-x-1.5 px-3 py-2 border-b-2 font-semibold transition-colors shrink-0 ${
+            activeTab === "doodle"
+              ? "border-amber-500 text-white bg-[#1f1f26]"
+              : "border-transparent text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Pencil className="w-3.5 h-3.5 text-amber-400" />
+          <span>Doodle</span>
         </button>
       </div>
 
@@ -439,31 +455,60 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      onUpdateSubtitles([]);
-                      setScriptFileName(null);
-                      if (scriptInputRef.current) scriptInputRef.current.value = "";
-                    }}
-                    title="Remove Loaded Script"
-                    className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors shrink-0 cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center space-x-1 shrink-0">
+                    <button
+                      onClick={() => setIsSubtitleEditorOpen(true)}
+                      title="Edit Subtitles & Cues"
+                      className="p-1.5 text-emerald-400 hover:text-emerald-200 hover:bg-emerald-950/60 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        onUpdateSubtitles([]);
+                        setScriptFileName(null);
+                        if (scriptInputRef.current) scriptInputRef.current.value = "";
+                      }}
+                      title="Remove Loaded Script"
+                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Subtitle Script Cue 1 Preview Snippet */}
+                {/* Subtitle Script Cue 1 Preview Snippet (Click to edit) */}
                 {subtitles[0] && (
-                  <div className="bg-[#121215]/90 rounded-lg p-2 border border-emerald-500/20 text-[11px] text-slate-300">
+                  <div
+                    onClick={() => setIsSubtitleEditorOpen(true)}
+                    className="bg-[#121215]/90 hover:bg-[#15151a] cursor-pointer rounded-lg p-2 border border-emerald-500/20 hover:border-emerald-500/50 text-[11px] text-slate-300 transition-all group"
+                  >
                     <div className="flex items-center justify-between text-[9px] font-mono text-emerald-400/80 mb-1">
-                      <span className="font-semibold uppercase tracking-wider">Preview (Cue 1)</span>
-                      <span>{subtitles[0].startSec.toFixed(1)}s - {subtitles[0].endSec.toFixed(1)}s</span>
+                      <span className="font-semibold uppercase tracking-wider flex items-center space-x-1">
+                        <span>Preview (Cue 1)</span>
+                        <span className="text-[8px] text-slate-500 group-hover:text-emerald-300 font-normal">
+                          • Click to edit
+                        </span>
+                      </span>
+                      <span>
+                        {subtitles[0].startSec.toFixed(1)}s -{" "}
+                        {subtitles[0].endSec.toFixed(1)}s
+                      </span>
                     </div>
-                    <p className="line-clamp-2 italic text-slate-200 text-[11px] bg-slate-900/60 px-2 py-1 rounded border border-[#2b2b36]">
+                    <p className="line-clamp-2 italic text-slate-200 text-[11px] bg-slate-900/60 px-2 py-1 rounded border border-[#2b2b36] group-hover:border-emerald-500/30">
                       &ldquo;{subtitles[0].text}&rdquo;
                     </p>
                   </div>
                 )}
+
+                {/* Edit Subtitles & Cues Button */}
+                <button
+                  onClick={() => setIsSubtitleEditorOpen(true)}
+                  className="w-full py-2 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-emerald-200 text-xs font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-sm group"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <span>Edit Subtitles & Cues ({subtitles.length})</span>
+                </button>
               </div>
             ) : (
               <div className="p-3 rounded-xl border border-dashed border-[#2b2b36] bg-[#121215]/40 text-center space-y-1">
@@ -1023,6 +1068,174 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
             </div>
           </div>
         )}
+
+        {/* TAB 6: DOODLE WHITEBOARD HAND-DRAWN ANIMATION */}
+        {activeTab === "doodle" && (
+          <div className="space-y-3.5">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-[#2b2b36]">
+              <div className="flex items-center space-x-1.5">
+                <Pencil className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
+                  Doodle Whiteboard Mode
+                </span>
+              </div>
+              <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
+                VideoScribe / Doodly
+              </span>
+            </div>
+
+            {/* Master Toggle */}
+            <div className="p-3 rounded-xl bg-[#121215] border border-[#2b2b36] flex items-center justify-between shadow-lg">
+              <div>
+                <div className="text-xs font-bold text-white flex items-center space-x-1.5">
+                  <span>Hand-Drawn Sketch Animation</span>
+                  {settings.enableDoodle && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Draws images stroke-by-stroke with animated marker hand
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  onUpdateSettings({
+                    enableDoodle: !settings.enableDoodle,
+                  })
+                }
+                className={`w-10 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                  settings.enableDoodle
+                    ? "bg-amber-500 shadow-md shadow-amber-500/30"
+                    : "bg-slate-800"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    settings.enableDoodle
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Active Hand Asset Preview Badge */}
+            <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/30 via-slate-900/60 to-slate-900/40 border border-amber-500/30 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <Pencil className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-amber-200 truncate">
+                    EXPO Black Marker (16:9 Transparent)
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-mono">
+                    ✓ Calibrated Marker Tip • High Precision Jitter
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Camera Focus Zoom Toggle */}
+            <div className="p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+                  <span>Camera Focus Zoom-In</span>
+                  <span className="text-[8px] font-bold uppercase bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded">
+                    Doodly Zoom
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Zooms in & follows marker tip during sketch, then zooms out
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  onUpdateSettings({
+                    enableDoodleZoom: !settings.enableDoodleZoom,
+                  })
+                }
+                className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                  settings.enableDoodleZoom ? "bg-indigo-500 shadow-sm" : "bg-slate-800"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    settings.enableDoodleZoom
+                      ? "translate-x-4"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Drawing Duration Ratio Slider */}
+            <div className="space-y-1.5 p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-medium">Drawing Speed Ratio</span>
+                <span className="font-mono text-amber-400 font-bold">
+                  {Math.round((settings.doodleDrawDurationRatio ?? 0.75) * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.4"
+                max="0.95"
+                step="0.05"
+                value={settings.doodleDrawDurationRatio ?? 0.75}
+                onChange={(e) =>
+                  onUpdateSettings({
+                    doodleDrawDurationRatio: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[9px] text-slate-500 font-mono">
+                <span>Fast Draw (40%)</span>
+                <span>Hold Drawing ({Math.round((1 - (settings.doodleDrawDurationRatio ?? 0.75)) * 100)}%)</span>
+              </div>
+            </div>
+
+            {/* Canvas Paper / Board Background Style */}
+            <div className="space-y-2 pt-1 border-t border-[#2b2b36]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  Board & Paper Color
+                </span>
+                <span className="text-[9px] text-amber-400/80 font-mono">
+                  Auto-Detects Image BG
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: "auto", label: "Auto Match Image", icon: "🎨" },
+                  { id: "whiteboard", label: "Matte Whiteboard", icon: "📋" },
+                  { id: "paper", label: "Vintage Paper", icon: "📜" },
+                  { id: "blueprint", label: "Blueprint Grid", icon: "📐" },
+                  { id: "chalkboard", label: "Dark Chalkboard", icon: "⬛" },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() =>
+                      onUpdateSettings({
+                        doodlePaperStyle: opt.id as any,
+                      })
+                    }
+                    className={`p-2 rounded-lg border text-left text-xs transition-all cursor-pointer flex items-center space-x-2 ${
+                      (settings.doodlePaperStyle || "auto") === opt.id
+                        ? "bg-amber-500/20 border-amber-500 text-amber-200 shadow-sm"
+                        : "bg-[#121215] border-[#2b2b36] text-slate-400 hover:border-slate-600 hover:text-slate-200"
+                    }`}
+                  >
+                    <span>{opt.icon}</span>
+                    <span className="truncate text-[11px] font-semibold">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sidebar Quick Render Action Footer */}
@@ -1042,6 +1255,15 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
           <span>{isExporting ? `Rendering (${exportProgress}%)` : "Render MP4 Video"}</span>
         </button>
       </div>
+
+      {/* Subtitle & SRT Transcript Editor Modal */}
+      <StudioSubtitleEditorModal
+        isOpen={isSubtitleEditorOpen}
+        onClose={() => setIsSubtitleEditorOpen(false)}
+        subtitles={subtitles}
+        scriptFileName={scriptFileName}
+        onSaveSubtitles={(updatedCues) => onUpdateSubtitles(updatedCues)}
+      />
     </div>
   );
 };

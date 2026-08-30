@@ -40,12 +40,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="font-black text-white">VidFlash</span>
                 <span className="text-indigo-400 font-extrabold">.in</span>
               </h1>
-              <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-bold font-poppins tracking-wide uppercase rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                v2.6
-              </span>
-              <span className="hidden sm:inline-flex items-center space-x-1 px-2 py-0.5 text-[10px] font-bold font-poppins tracking-wide uppercase rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Stable</span>
+              <span className="hidden sm:inline-block px-2.5 py-0.5 text-[10px] font-bold font-poppins tracking-wide uppercase rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 shadow-sm">
+                v2.7
               </span>
             </div>
             <p className="text-xs font-semibold font-openSans text-slate-400 hidden sm:block">
