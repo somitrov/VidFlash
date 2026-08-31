@@ -140,7 +140,7 @@ export default function Home() {
             <span className="font-semibold text-slate-300">
               VidFlash.in
             </span>
-            <span>— 100% In-Browser Media Converter</span>
+            <span>— Now Make Videos in Flash!</span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-slate-400">

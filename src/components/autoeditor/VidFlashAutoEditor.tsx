@@ -43,6 +43,10 @@ import {
 import { sortClipsByTimestamp, formatSecondsToTimecode } from "@/lib/engine/timestampParser";
 import { exportVideoClientSide } from "@/lib/engine/videoExporter";
 import { playAudioSfx } from "@/lib/engine/sfxEngine";
+import {
+  setDoodleDrawingAudioActive,
+  stopDoodleAudioImmediately,
+} from "@/lib/engine/doodleAudioEngine";
 
 export function computeResolution(
   profile: RenderProfileTier,
@@ -155,6 +159,7 @@ export function VidFlashAutoEditor({
     enableVintageSepia: false,
     enableDoodle: false,
     enableDoodleZoom: false,
+    enableDoodleSfx: true,
     doodleDrawDurationRatio: 0.75,
     doodlePaperStyle: "auto",
   });
@@ -390,6 +395,7 @@ export function VidFlashAutoEditor({
   const handleTogglePlay = async () => {
     if (isPlaying) {
       setIsPlaying(false);
+      stopDoodleAudioImmediately();
       try {
         audioElementRef.current?.pause();
         bgmElementRef.current?.pause();
@@ -440,6 +446,7 @@ export function VidFlashAutoEditor({
   const handleSeek = (timeSec: number) => {
     const clamped = Math.max(0, Math.min(totalDurationSec, timeSec));
     setCurrentTimeSec(clamped);
+    stopDoodleAudioImmediately();
     if (audioElementRef.current && isFinite(audioElementRef.current.duration)) {
       try {
         audioElementRef.current.currentTime = clamped;
@@ -456,6 +463,7 @@ export function VidFlashAutoEditor({
     if (!isPlaying) {
       if (animationFrameRef.current)
         cancelAnimationFrame(animationFrameRef.current);
+      stopDoodleAudioImmediately();
       return;
     }
 
@@ -467,6 +475,31 @@ export function VidFlashAutoEditor({
 
       setCurrentTimeSec((prev) => {
         const nextTime = prev + deltaSec;
+
+        // Flash Doodle Marker / Chalk Sketch Audio Synchronization
+        if (
+          studioSettings.enableDoodle &&
+          studioSettings.enableDoodleSfx !== false &&
+          timelineClips.length > 0
+        ) {
+          const activeClip = timelineClips.find(
+            (c) => nextTime >= c.startSec && nextTime < c.endSec
+          );
+          if (activeClip) {
+            const clipDur = Math.max(0.5, activeClip.durationSec || 5);
+            const drawDurationSec = Math.min(11.0, clipDur * 0.82);
+            const isActivelyDrawing =
+              nextTime - activeClip.startSec < drawDurationSec;
+            setDoodleDrawingAudioActive(
+              isActivelyDrawing,
+              studioSettings.doodlePaperStyle || "auto"
+            );
+          } else {
+            setDoodleDrawingAudioActive(false);
+          }
+        } else {
+          setDoodleDrawingAudioActive(false);
+        }
 
         // Sound Effect Trigger at Scene Cuts (Default: Randomized SFX on Cuts)
         if (
@@ -488,6 +521,7 @@ export function VidFlashAutoEditor({
 
         if (nextTime >= totalDurationSec) {
           setIsPlaying(false);
+          stopDoodleAudioImmediately();
           try {
             audioElementRef.current?.pause();
             bgmElementRef.current?.pause();
@@ -505,8 +539,24 @@ export function VidFlashAutoEditor({
     return () => {
       if (animationFrameRef.current)
         cancelAnimationFrame(animationFrameRef.current);
+      stopDoodleAudioImmediately();
     };
-  }, [isPlaying, totalDurationSec, studioSettings.enableSfx, timelineClips]);
+  }, [
+    isPlaying,
+    totalDurationSec,
+    studioSettings.enableSfx,
+    studioSettings.enableDoodle,
+    studioSettings.enableDoodleSfx,
+    studioSettings.doodlePaperStyle,
+    timelineClips,
+  ]);
+
+  // Immediate Audio Silence when Doodle Mode or Doodle SFX is toggled off
+  useEffect(() => {
+    if (!studioSettings.enableDoodle || studioSettings.enableDoodleSfx === false) {
+      stopDoodleAudioImmediately();
+    }
+  }, [studioSettings.enableDoodle, studioSettings.enableDoodleSfx]);
 
   // Clip Property Updates
   const handleUpdateClipMotion = (clipId: string, motion: MotionEffect) => {
@@ -592,6 +642,7 @@ export function VidFlashAutoEditor({
         enableVintageSepia: studioSettings.enableVintageSepia,
         enableDoodle: studioSettings.enableDoodle,
         enableDoodleZoom: studioSettings.enableDoodleZoom,
+        enableDoodleSfx: studioSettings.enableDoodleSfx !== false,
         doodleDrawDurationRatio: studioSettings.doodleDrawDurationRatio ?? 0.75,
         doodlePaperStyle: studioSettings.doodlePaperStyle ?? "auto",
       };

@@ -28,6 +28,12 @@ export interface DoodleVectorData {
   // Cumulative distances for O(1) binary-search traversal during 60FPS render
   strokeStartDistances: number[];
   detectedBgColor: DetectedBgColor;
+  centroidXNorm?: number;
+  centroidYNorm?: number;
+  startCentroidXNorm?: number;
+  startCentroidYNorm?: number;
+  endCentroidXNorm?: number;
+  endCentroidYNorm?: number;
 }
 
 const vectorCache = new WeakMap<HTMLImageElement | HTMLVideoElement, DoodleVectorData>();
@@ -179,11 +185,59 @@ function extractStrokesFromSource(
     return createFallbackVectorData(detectedBgColor);
   }
 
+  // 6. Compute overall and start/end stroke centroids for rock-solid smooth camera tracking
+  let totalPts = 0;
+  let sumX = 0;
+  let sumY = 0;
+
+  const startLimit = Math.max(1, Math.floor(finalStrokes.length * 0.25));
+  let startPts = 0;
+  let startSumX = 0;
+  let startSumY = 0;
+
+  const endStartIdx = Math.max(0, finalStrokes.length - startLimit);
+  let endPts = 0;
+  let endSumX = 0;
+  let endSumY = 0;
+
+  for (let s = 0; s < finalStrokes.length; s++) {
+    const pts = finalStrokes[s].points;
+    for (let p = 0; p < pts.length; p++) {
+      sumX += pts[p].x;
+      sumY += pts[p].y;
+      totalPts++;
+
+      if (s < startLimit) {
+        startSumX += pts[p].x;
+        startSumY += pts[p].y;
+        startPts++;
+      }
+      if (s >= endStartIdx) {
+        endSumX += pts[p].x;
+        endSumY += pts[p].y;
+        endPts++;
+      }
+    }
+  }
+
+  const centroidXNorm = totalPts > 0 ? sumX / totalPts : 0.5;
+  const centroidYNorm = totalPts > 0 ? sumY / totalPts : 0.5;
+  const startCentroidXNorm = startPts > 0 ? startSumX / startPts : centroidXNorm;
+  const startCentroidYNorm = startPts > 0 ? startSumY / startPts : centroidYNorm;
+  const endCentroidXNorm = endPts > 0 ? endSumX / endPts : centroidXNorm;
+  const endCentroidYNorm = endPts > 0 ? endSumY / endPts : centroidYNorm;
+
   return {
     strokes: finalStrokes,
     totalLength: cumulativeLen,
     strokeStartDistances: startDistances,
     detectedBgColor,
+    centroidXNorm,
+    centroidYNorm,
+    startCentroidXNorm,
+    startCentroidYNorm,
+    endCentroidXNorm,
+    endCentroidYNorm,
   };
 }
 
@@ -504,6 +558,12 @@ function createFallbackVectorData(
     totalLength: totalLen,
     strokeStartDistances: startDists,
     detectedBgColor,
+    centroidXNorm: 0.5,
+    centroidYNorm: 0.5,
+    startCentroidXNorm: 0.5,
+    startCentroidYNorm: 0.35,
+    endCentroidXNorm: 0.5,
+    endCentroidYNorm: 0.65,
   };
 }
 

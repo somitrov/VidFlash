@@ -71,8 +71,9 @@ export interface StudioSettings {
   // Doodle & Whiteboard Animation Suite
   enableDoodle?: boolean;
   enableDoodleZoom?: boolean;
+  enableDoodleSfx?: boolean;
   doodleDrawDurationRatio?: number;
-  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "chalkboard";
 }
 
 export interface TimelineClip {
@@ -170,6 +171,7 @@ export interface ExportConfig {
   // Doodle Whiteboard Suite
   enableDoodle?: boolean;
   enableDoodleZoom?: boolean;
+  enableDoodleSfx?: boolean;
   doodleDrawDurationRatio?: number;
-  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "chalkboard";
 }

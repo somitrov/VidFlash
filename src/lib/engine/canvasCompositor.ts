@@ -69,7 +69,7 @@ export function renderCompositorFrame({
   enableDoodle?: boolean;
   enableDoodleZoom?: boolean;
   doodleDrawDurationRatio?: number;
-  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
+  doodlePaperStyle?: "auto" | "whiteboard" | "paper" | "chalkboard";
 }) {
   // 1. Base Stage Background
   ctx.save();
@@ -988,7 +988,7 @@ function getCachedHandImage(): HTMLImageElement | null {
   if (typeof window === "undefined") return null;
   if (!cachedHandImg) {
     cachedHandImg = new Image();
-    cachedHandImg.src = "/assets/hand.png";
+    cachedHandImg.src = "/assets/hand2.png";
   }
   return cachedHandImg;
 }
@@ -1012,7 +1012,7 @@ function renderPaperBackground(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  style: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard" = "auto",
+  style: "auto" | "whiteboard" | "paper" | "chalkboard" = "auto",
   detectedBg?: DetectedBgColor
 ) {
   ctx.save();
@@ -1022,38 +1022,9 @@ function renderPaperBackground(
   const fillH = height * 5;
 
   if (style === "chalkboard") {
-    // Charcoal matte chalkboard
-    ctx.fillStyle = "#18181b";
+    // Pure AMOLED Deep Black (#000000) for seamless dark canvas blending
+    ctx.fillStyle = "#000000";
     ctx.fillRect(fillX, fillY, fillW, fillH);
-    const rad = ctx.createRadialGradient(
-      width / 2,
-      height / 2,
-      width * 0.2,
-      width / 2,
-      height / 2,
-      width * 0.75
-    );
-    rad.addColorStop(0, "rgba(255, 255, 255, 0.03)");
-    rad.addColorStop(1, "rgba(0, 0, 0, 0.5)");
-    ctx.fillStyle = rad;
-    ctx.fillRect(fillX, fillY, fillW, fillH);
-  } else if (style === "blueprint") {
-    // Technical blueprint navy with grid
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(fillX, fillY, fillW, fillH);
-    ctx.strokeStyle = "rgba(56, 189, 248, 0.12)";
-    ctx.lineWidth = 1;
-    const gridSpacing = Math.max(24, Math.round(width * 0.035));
-    ctx.beginPath();
-    for (let x = fillX; x < fillX + fillW; x += gridSpacing) {
-      ctx.moveTo(x, fillY);
-      ctx.lineTo(x, fillY + fillH);
-    }
-    for (let y = fillY; y < fillY + fillH; y += gridSpacing) {
-      ctx.moveTo(fillX, y);
-      ctx.lineTo(fillX + fillW, y);
-    }
-    ctx.stroke();
   } else if (style === "paper") {
     // Vintage sketch parchment
     ctx.fillStyle = "#f5f0e6";
@@ -1071,7 +1042,7 @@ function renderPaperBackground(
     ctx.fillStyle = rad;
     ctx.fillRect(fillX, fillY, fillW, fillH);
   } else {
-    // "auto" or "whiteboard": Pure flat #EAEAEA canvas background matching
+    // "auto" or "whiteboard": Pure flat canvas background matching
     const isAuto = style === "auto";
     const hasImageBg = detectedBg && !detectedBg.isTransparent;
     const bgColorHex =
@@ -1085,22 +1056,6 @@ function renderPaperBackground(
 
     ctx.fillStyle = bgColorHex;
     ctx.fillRect(fillX, fillY, fillW, fillH);
-
-    // If dark background (e.g. chalkboard or dark image), apply subtle contrast
-    if (detectedBg?.isDark) {
-      const rad = ctx.createRadialGradient(
-        width / 2,
-        height / 2,
-        width * 0.25,
-        width / 2,
-        height / 2,
-        width * 0.8
-      );
-      rad.addColorStop(0, "rgba(255, 255, 255, 0.03)");
-      rad.addColorStop(1, "rgba(0, 0, 0, 0.35)");
-      ctx.fillStyle = rad;
-      ctx.fillRect(fillX, fillY, fillW, fillH);
-    }
   }
   ctx.restore();
 }
@@ -1114,7 +1069,7 @@ function renderDoodleClip({
   clipProgress,
   canvasWidth,
   canvasHeight,
-  drawDurationRatio = 0.75,
+  drawDurationRatio,
   paperStyle = "auto",
   enableDoodleZoom = false,
   currentTimeSec = 0,
@@ -1125,7 +1080,7 @@ function renderDoodleClip({
   canvasWidth: number;
   canvasHeight: number;
   drawDurationRatio?: number;
-  paperStyle?: "auto" | "whiteboard" | "paper" | "blueprint" | "chalkboard";
+  paperStyle?: "auto" | "whiteboard" | "paper" | "chalkboard";
   enableDoodleZoom?: boolean;
   currentTimeSec: number;
 }) {
@@ -1153,8 +1108,25 @@ function renderDoodleClip({
   const imgX = (canvasWidth - targetW) / 2;
   const imgY = (canvasHeight - targetH) / 2;
 
-  const safeDrawRatio = Math.max(0.3, Math.min(0.95, drawDurationRatio));
-  const drawProgress = Math.max(0, Math.min(1, clipProgress / safeDrawRatio));
+  // Dynamically compute optimal drawing speed from clip duration:
+  // Short clips (e.g. 2-5s) draw fast; long clips (10s - 60s+) always complete drawing in max 10-12s
+  const clipDur = Math.max(0.5, clip.durationSec || 5);
+  const maxDrawDurationSec = Math.min(11.0, clipDur * 0.82);
+  const effectiveDrawRatio =
+    drawDurationRatio !== undefined &&
+    drawDurationRatio > 0.3 &&
+    drawDurationRatio !== 0.75
+      ? drawDurationRatio
+      : maxDrawDurationSec / clipDur;
+  const safeDrawRatio = Math.max(0.05, Math.min(0.95, effectiveDrawRatio));
+
+  // Organic artist acceleration curve: starts at a deliberate, human speed
+  // and smoothly accelerates through intricate details to finish 100% of the sketch
+  const rawT = Math.max(0, Math.min(1, clipProgress / safeDrawRatio));
+  const drawProgress = Math.max(
+    0,
+    Math.min(1, 0.38 * rawT + 0.62 * Math.pow(rawT, 1.4))
+  );
 
   // Extract / retrieve cached vector contours with auto background color
   const vectorData = getOrExtractDoodleVectorData(mediaSource);
@@ -1168,7 +1140,7 @@ function renderDoodleClip({
   const baseTipX = imgX + tipXNorm * targetW;
   const baseTipY = imgY + tipYNorm * targetH;
 
-  // Realistic marker scribbling micro-jitter
+  // Realistic marker scribbling micro-jitter (applied only to the pen tip, not the camera)
   const isActivelyDrawing = drawProgress < 1.0;
   const jitterX = isActivelyDrawing
     ? Math.sin(currentTimeSec * 45) * (canvasWidth * 0.0035) +
@@ -1184,24 +1156,46 @@ function renderDoodleClip({
 
   ctx.save();
 
-  // Dynamic Camera Focus Zoom & Follow (Point-to-Point Doodly Tracking)
-  if (enableDoodleZoom && isActivelyDrawing) {
-    const zoomProgress =
-      drawProgress > 0.88
-        ? (1 - drawProgress) / 0.12
-        : Math.min(1, drawProgress / 0.08);
-    const zoomScale = 1.0 + 0.42 * easeInOutQuad(zoomProgress);
+  // Dynamic Camera Focus Zoom & Smooth Tracking of Active Hand Drawing Area
+  if (enableDoodleZoom) {
+    // 1. Mild, cinematic zoom (+12% zoom) following a smooth continuous bell curve
+    const zoomBell = Math.sin(Math.max(0, Math.min(1, rawT)) * Math.PI);
+    const zoomScale = 1.0 + 0.12 * easeInOutQuad(zoomBell);
 
-    const maxShiftX = (canvasWidth * (zoomScale - 1)) / (2 * zoomScale);
-    const maxShiftY = (canvasHeight * (zoomScale - 1)) / (2 * zoomScale);
-    const camX = Math.max(
-      canvasWidth / 2 - maxShiftX,
-      Math.min(canvasWidth / 2 + maxShiftX, markerTipX)
-    );
-    const camY = Math.max(
-      canvasHeight / 2 - maxShiftY,
-      Math.min(canvasHeight / 2 + maxShiftY, markerTipY)
-    );
+    // 2. Smoothly track the drawing area from the initial starting strokes to the ending strokes
+    // Uses pre-computed macroscopic stroke centroids (100% immune to stroke-to-stroke pen jumping & jitter)
+    const startX =
+      imgX +
+      (vectorData.startCentroidXNorm ?? vectorData.centroidXNorm ?? 0.5) *
+        targetW;
+    const startY =
+      imgY +
+      (vectorData.startCentroidYNorm ?? vectorData.centroidYNorm ?? 0.5) *
+        targetH;
+    const endX =
+      imgX +
+      (vectorData.endCentroidXNorm ?? vectorData.centroidXNorm ?? 0.5) * targetW;
+    const endY =
+      imgY +
+      (vectorData.endCentroidYNorm ?? vectorData.centroidYNorm ?? 0.5) * targetH;
+
+    // Smoothly glide the focus point across the drawing sequence
+    const focusX = startX + (endX - startX) * drawProgress;
+    const focusY = startY + (endY - startY) * drawProgress;
+
+    const maxPanX = (canvasWidth * (zoomScale - 1)) / (2 * zoomScale);
+    const maxPanY = (canvasHeight * (zoomScale - 1)) / (2 * zoomScale);
+
+    const desiredOffsetX = focusX - canvasWidth / 2;
+    const desiredOffsetY = focusY - canvasHeight / 2;
+
+    const trackPanX =
+      Math.max(-maxPanX, Math.min(maxPanX, desiredOffsetX * 0.75)) * zoomBell;
+    const trackPanY =
+      Math.max(-maxPanY, Math.min(maxPanY, desiredOffsetY * 0.75)) * zoomBell;
+
+    const camX = canvasWidth / 2 + trackPanX;
+    const camY = canvasHeight / 2 + trackPanY;
 
     ctx.translate(canvasWidth / 2, canvasHeight / 2);
     ctx.scale(zoomScale, zoomScale);
@@ -1287,18 +1281,25 @@ function renderDoodleClip({
 
       // Composite sketch image through reveal mask
       offCtx.globalCompositeOperation = "source-in";
-      if (paperStyle === "chalkboard") {
-        offCtx.filter =
-          "grayscale(100%) invert(100%) contrast(180%) brightness(120%)";
-        offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
-        offCtx.restore();
-        ctx.drawImage(offscreen, 0, 0);
-      } else if (paperStyle === "blueprint") {
-        offCtx.filter =
-          "grayscale(100%) invert(100%) contrast(150%) sepia(100%) hue-rotate(180deg) saturate(200%)";
-        offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
-        offCtx.restore();
-        ctx.drawImage(offscreen, 0, 0);
+      const isDarkChalkboard =
+        paperStyle === "chalkboard" ||
+        (paperStyle === "auto" && vectorData.detectedBgColor.isDark);
+
+      if (isDarkChalkboard) {
+        if (vectorData.detectedBgColor.isDark) {
+          // Source image already has dark/black background: enhance contrast to pure AMOLED black & crisp white
+          offCtx.filter = "grayscale(100%) contrast(200%) brightness(115%)";
+          offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
+          offCtx.restore();
+          ctx.drawImage(offscreen, 0, 0);
+        } else {
+          // Source image has light/white background: invert to dark chalkboard with chalk white strokes
+          offCtx.filter =
+            "grayscale(100%) invert(100%) contrast(180%) brightness(120%)";
+          offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
+          offCtx.restore();
+          ctx.drawImage(offscreen, 0, 0);
+        }
       } else {
         // High-contrast ink extraction + Multiply compositing:
         // Pushes any white/light paper background to pure white #FFFFFF
@@ -1320,27 +1321,28 @@ function renderDoodleClip({
   // 3. Render Hand with Marker Pen pinned at (markerTipX, markerTipY)
   const handImg = getCachedHandImage();
   if (handImg && handImg.complete && handImg.naturalWidth > 0) {
-    const handScale = (canvasWidth * 0.82) / handImg.naturalWidth;
+    const handScale = (canvasWidth * 0.70) / handImg.naturalWidth;
     const handW = handImg.naturalWidth * handScale;
     const handH = handImg.naturalHeight * handScale;
 
-    // Calibrated EXPO Marker Tip Anchor
-    const TIP_X_RATIO = 0.201;
-    const TIP_Y_RATIO = 0.355;
+    // Calibrated EXPO Marker Tip Anchor for updated hand image (1024x1536 Portrait)
+    const TIP_X_RATIO = 0.0635;
+    const TIP_Y_RATIO = 0.1810;
 
     let handX = markerTipX - TIP_X_RATIO * handW;
     let handY = markerTipY - TIP_Y_RATIO * handH;
 
-    // Slide hand off-screen when drawing is finished
+    // Slide hand off-screen in a clean ~0.65s window when drawing is finished
     let shouldDrawHand = true;
     if (drawProgress >= 1.0) {
+      const elapsedAfterDrawSec = (clipProgress - safeDrawRatio) * clipDur;
       const exitProgress = Math.min(
         1,
-        (clipProgress - safeDrawRatio) / Math.max(0.05, 1 - safeDrawRatio)
+        Math.max(0, elapsedAfterDrawSec / 0.65)
       );
-      const slideDist = easeInOutQuad(exitProgress) * canvasHeight * 1.3;
-      handX += slideDist * 0.75;
-      handY += slideDist;
+      const slideDist = easeInOutQuad(exitProgress) * canvasHeight * 1.5;
+      handX += slideDist * 0.65;
+      handY += slideDist * 1.15;
       if (exitProgress >= 1.0) {
         shouldDrawHand = false;
       }

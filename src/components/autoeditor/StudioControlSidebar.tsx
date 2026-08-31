@@ -26,7 +26,9 @@ import {
   Film,
   FileText,
   Pencil,
+  Download,
 } from "lucide-react";
+import { DoodleMasterPromptModal } from "./DoodleMasterPromptModal";
 import {
   TimelineClip,
   SubtitleCue,
@@ -118,6 +120,7 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
   const [activeTab, setActiveTab] = useState<InspectorTab>("video");
   const [scriptFileName, setScriptFileName] = useState<string | null>(null);
   const [isSubtitleEditorOpen, setIsSubtitleEditorOpen] = useState<boolean>(false);
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState<boolean>(false);
   const scriptInputRef = useRef<HTMLInputElement>(null);
   const bgmInputRef = useRef<HTMLInputElement>(null);
 
@@ -1072,17 +1075,22 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
         {/* TAB 6: DOODLE WHITEBOARD HAND-DRAWN ANIMATION */}
         {activeTab === "doodle" && (
           <div className="space-y-3.5">
-            {/* Header */}
+            {/* Header with Master Prompt Download Button */}
             <div className="flex items-center justify-between pb-2 border-b border-[#2b2b36]">
               <div className="flex items-center space-x-1.5">
                 <Pencil className="w-3.5 h-3.5 text-amber-400" />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">
-                  Doodle Whiteboard Mode
+                  Doodle Flash
                 </span>
               </div>
-              <span className="text-[9px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">
-                VideoScribe / Doodly
-              </span>
+              <button
+                onClick={() => setIsPromptModalOpen(true)}
+                className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
+                title="Download Master Prompt & Google Flow Guide"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>Master Prompt</span>
+              </button>
             </div>
 
             {/* Master Toggle */}
@@ -1120,34 +1128,14 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               </button>
             </div>
 
-            {/* Active Hand Asset Preview Badge */}
-            <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/30 via-slate-900/60 to-slate-900/40 border border-amber-500/30 flex items-center justify-between">
-              <div className="flex items-center space-x-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                  <Pencil className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11px] font-bold text-amber-200 truncate">
-                    EXPO Black Marker (16:9 Transparent)
-                  </div>
-                  <div className="text-[9px] text-slate-400 font-mono">
-                    ✓ Calibrated Marker Tip • High Precision Jitter
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Dynamic Camera Focus Zoom Toggle */}
             <div className="p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
               <div>
                 <div className="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
                   <span>Camera Focus Zoom-In</span>
-                  <span className="text-[8px] font-bold uppercase bg-indigo-950/80 border border-indigo-500/30 text-indigo-300 px-1.5 py-0.5 rounded">
-                    Doodly Zoom
-                  </span>
                 </div>
                 <p className="text-[10px] text-slate-400 mt-0.5">
-                  Zooms in & follows marker tip during sketch, then zooms out
+                  Smooth tracking zoom following active sketch & hand area
                 </p>
               </div>
               <button
@@ -1170,31 +1158,37 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               </button>
             </div>
 
-            {/* Drawing Duration Ratio Slider */}
-            <div className="space-y-1.5 p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36]">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-300 font-medium">Drawing Speed Ratio</span>
-                <span className="font-mono text-amber-400 font-bold">
-                  {Math.round((settings.doodleDrawDurationRatio ?? 0.75) * 100)}%
-                </span>
+            {/* Marker Sketch Audio SFX Toggle */}
+            <div className="p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between">
+              <div>
+                <div className="text-xs font-semibold text-slate-200 flex items-center space-x-1.5">
+                  <span>Marker Sketch Sound FX</span>
+                  <span className="text-[8px] font-bold uppercase bg-amber-950/80 border border-amber-500/30 text-amber-300 px-1.5 py-0.5 rounded">
+                    Audio FX
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Realistic paper & board rubbing sound synchronized with hand
+                </p>
               </div>
-              <input
-                type="range"
-                min="0.4"
-                max="0.95"
-                step="0.05"
-                value={settings.doodleDrawDurationRatio ?? 0.75}
-                onChange={(e) =>
+              <button
+                onClick={() =>
                   onUpdateSettings({
-                    doodleDrawDurationRatio: parseFloat(e.target.value),
+                    enableDoodleSfx: settings.enableDoodleSfx !== false ? false : true,
                   })
                 }
-                className="w-full accent-amber-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
-              />
-              <div className="flex justify-between text-[9px] text-slate-500 font-mono">
-                <span>Fast Draw (40%)</span>
-                <span>Hold Drawing ({Math.round((1 - (settings.doodleDrawDurationRatio ?? 0.75)) * 100)}%)</span>
-              </div>
+                className={`w-9 h-5 rounded-full transition-colors relative p-0.5 cursor-pointer shrink-0 ${
+                  settings.enableDoodleSfx !== false ? "bg-amber-500 shadow-sm" : "bg-slate-800"
+                }`}
+              >
+                <div
+                  className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                    settings.enableDoodleSfx !== false
+                      ? "translate-x-4"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Canvas Paper / Board Background Style */}
@@ -1210,10 +1204,9 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { id: "auto", label: "Auto Match Image", icon: "🎨" },
+                  { id: "chalkboard", label: "Dark Chalkboard", icon: "⬛" },
                   { id: "whiteboard", label: "Matte Whiteboard", icon: "📋" },
                   { id: "paper", label: "Vintage Paper", icon: "📜" },
-                  { id: "blueprint", label: "Blueprint Grid", icon: "📐" },
-                  { id: "chalkboard", label: "Dark Chalkboard", icon: "⬛" },
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -1263,6 +1256,12 @@ export const StudioControlSidebar: React.FC<StudioControlSidebarProps> = ({
         subtitles={subtitles}
         scriptFileName={scriptFileName}
         onSaveSubtitles={(updatedCues) => onUpdateSubtitles(updatedCues)}
+      />
+
+      {/* Google Flow Whiteboard Master Prompt Modal */}
+      <DoodleMasterPromptModal
+        isOpen={isPromptModalOpen}
+        onClose={() => setIsPromptModalOpen(false)}
       />
     </div>
   );

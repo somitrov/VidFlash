@@ -10,6 +10,7 @@ import { renderCompositorFrame } from "./canvasCompositor";
 import { getFFmpegInstance } from "../ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { getSfxAudioBuffer } from "./sfxEngine";
+import { loadMarkerSoundBuffer } from "./doodleAudioEngine";
 
 /**
  * High-Performance Client-Side Video Rendering & Turbo Exporter
@@ -155,6 +156,45 @@ export async function exportVideoClientSide({
     }
   }
 
+  // Flash Doodle Marker / Chalk Sketch Audio Track Preload & Graph Construction
+  const doodleSfxNodes: {
+    node: AudioBufferSourceNode;
+    startOffsetSec: number;
+    durationSec: number;
+  }[] = [];
+  if (
+    config.enableDoodle &&
+    config.enableDoodleSfx !== false &&
+    clips.length > 0
+  ) {
+    const doodleGain = audioContext.createGain();
+    doodleGain.gain.value = 0.55;
+    doodleGain.connect(audioDest);
+
+    const sketchBuffer = await loadMarkerSoundBuffer(audioContext);
+    if (sketchBuffer) {
+      for (const clip of clips) {
+        if (clip.startSec >= totalDuration) continue;
+        const clipDur = Math.max(0.5, clip.durationSec || 5);
+        const drawDurationSec = Math.min(11.0, clipDur * 0.82);
+
+        try {
+          const source = audioContext.createBufferSource();
+          source.buffer = sketchBuffer;
+          source.loop = true;
+          source.connect(doodleGain);
+          doodleSfxNodes.push({
+            node: source,
+            startOffsetSec: clip.startSec,
+            durationSec: drawDurationSec,
+          });
+        } catch (e) {
+          console.warn("Doodle audio scheduling notice:", e);
+        }
+      }
+    }
+  }
+
   // Background Music (BGM) Track with Auto-Ducking
   let bgmSource: AudioBufferSourceNode | null = null;
   if (bgmTrack && bgmTrack.audioBuffer) {
@@ -177,7 +217,10 @@ export async function exportVideoClientSide({
 
   canvasStream.getVideoTracks().forEach((t) => combinedStream.addTrack(t));
   const hasAudio =
-    (Boolean(audioTrack) || Boolean(bgmTrack) || sfxNodes.length > 0) &&
+    (Boolean(audioTrack) ||
+      Boolean(bgmTrack) ||
+      sfxNodes.length > 0 ||
+      doodleSfxNodes.length > 0) &&
     audioDest.stream.getAudioTracks().length > 0;
 
   if (hasAudio) {
@@ -268,6 +311,11 @@ export async function exportVideoClientSide({
           node.stop();
         } catch {}
       });
+      doodleSfxNodes.forEach(({ node }) => {
+        try {
+          node.stop();
+        } catch {}
+      });
       try {
         if (recorder.state !== "inactive") recorder.stop();
       } catch {}
@@ -316,6 +364,14 @@ export async function exportVideoClientSide({
         node.start(renderStartAudioTime + startOffsetSec);
       } catch (e) {
         console.warn("SFX start notice:", e);
+      }
+    });
+    doodleSfxNodes.forEach(({ node, startOffsetSec, durationSec }) => {
+      try {
+        node.start(renderStartAudioTime + startOffsetSec);
+        node.stop(renderStartAudioTime + startOffsetSec + durationSec);
+      } catch (e) {
+        console.warn("Doodle sketch SFX start notice:", e);
       }
     });
 
