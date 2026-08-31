@@ -392,7 +392,7 @@ export function VidFlashAutoEditor({
   };
 
   // Playback Loop & Clock Sync
-  const handleTogglePlay = async () => {
+  const handleTogglePlay = useCallback(async () => {
     if (isPlaying) {
       setIsPlaying(false);
       stopDoodleAudioImmediately();
@@ -441,7 +441,7 @@ export function VidFlashAutoEditor({
         }
       }
     }
-  };
+  }, [isPlaying, currentTimeSec, totalDurationSec, audioTrack, bgmTrack]);
 
   const handleSeek = (timeSec: number) => {
     const clamped = Math.max(0, Math.min(totalDurationSec, timeSec));
@@ -557,6 +557,31 @@ export function VidFlashAutoEditor({
       stopDoodleAudioImmediately();
     }
   }, [studioSettings.enableDoodle, studioSettings.enableDoodleSfx]);
+
+  // Keyboard Spacebar Play / Pause Shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing inside an input, textarea, or editable field
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.closest("input, textarea, [contenteditable='true']"))
+      ) {
+        return;
+      }
+
+      if (e.code === "Space" || e.key === " ") {
+        e.preventDefault();
+        handleTogglePlay();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleTogglePlay]);
 
   // Clip Property Updates
   const handleUpdateClipMotion = (clipId: string, motion: MotionEffect) => {
