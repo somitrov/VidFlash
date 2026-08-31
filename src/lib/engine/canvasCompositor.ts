@@ -348,11 +348,22 @@ function renderTransitionComposite(
         canvasHeight: height,
         drawDurationRatio: doodleDrawDurationRatio,
         paperStyle: doodlePaperStyle,
-        enableDoodleZoom,
+        enableDoodleZoom: false,
         currentTimeSec,
+        renderHand: false,
       });
     } else {
-      renderClip(clip, prog, 1.0);
+      renderSingleClip(
+        ctx,
+        clip,
+        prog,
+        width,
+        height,
+        1.0,
+        filterStr,
+        enableVintageFilmReel,
+        currentTimeSec
+      );
     }
     ctx.restore();
   };
@@ -789,10 +800,11 @@ function renderDoodleClip({
   clipProgress,
   canvasWidth,
   canvasHeight,
-  drawDurationRatio,
+  drawDurationRatio = 0.75,
   paperStyle = "auto",
   enableDoodleZoom = false,
   currentTimeSec = 0,
+  renderHand = true,
 }: {
   ctx: CanvasRenderingContext2D;
   clip: TimelineClip;
@@ -803,6 +815,7 @@ function renderDoodleClip({
   paperStyle?: "auto" | "whiteboard" | "paper" | "chalkboard";
   enableDoodleZoom?: boolean;
   currentTimeSec: number;
+  renderHand?: boolean;
 }) {
   const mediaSource =
     clip.fileType === "video" ? clip.videoElement : clip.imageElement;
@@ -1039,44 +1052,46 @@ function renderDoodleClip({
   } catch {}
 
   // 3. Render Hand with Marker Pen pinned at (markerTipX, markerTipY)
-  const handImg = getCachedHandImage();
-  if (handImg && handImg.complete && handImg.naturalWidth > 0) {
-    const handScale = (canvasWidth * 0.70) / handImg.naturalWidth;
-    const handW = handImg.naturalWidth * handScale;
-    const handH = handImg.naturalHeight * handScale;
+  if (renderHand) {
+    const handImg = getCachedHandImage();
+    if (handImg && handImg.complete && handImg.naturalWidth > 0) {
+      const handScale = (canvasWidth * 0.70) / handImg.naturalWidth;
+      const handW = handImg.naturalWidth * handScale;
+      const handH = handImg.naturalHeight * handScale;
 
-    // Calibrated EXPO Marker Tip Anchor for updated hand image (1024x1536 Portrait)
-    const TIP_X_RATIO = 0.0713;
-    const TIP_Y_RATIO = 0.1732;
+      // Calibrated EXPO Marker Tip Anchor for updated hand image (1024x1536 Portrait)
+      const TIP_X_RATIO = 0.0713;
+      const TIP_Y_RATIO = 0.1732;
 
-    let handX = markerTipX - TIP_X_RATIO * handW;
-    let handY = markerTipY - TIP_Y_RATIO * handH;
+      let handX = markerTipX - TIP_X_RATIO * handW;
+      let handY = markerTipY - TIP_Y_RATIO * handH;
 
-    // Slide hand off-screen in a clean ~0.65s window when drawing is finished
-    let shouldDrawHand = true;
-    if (drawProgress >= 1.0) {
-      const elapsedAfterDrawSec = (clipProgress - safeDrawRatio) * clipDur;
-      const exitProgress = Math.min(
-        1,
-        Math.max(0, elapsedAfterDrawSec / 0.65)
-      );
-      const slideDist = easeInOutQuad(exitProgress) * canvasHeight * 1.5;
-      handX += slideDist * 0.65;
-      handY += slideDist * 1.15;
-      if (exitProgress >= 1.0) {
-        shouldDrawHand = false;
+      // Slide hand off-screen in a clean ~0.65s window when drawing is finished
+      let shouldDrawHand = true;
+      if (drawProgress >= 1.0) {
+        const elapsedAfterDrawSec = (clipProgress - safeDrawRatio) * clipDur;
+        const exitProgress = Math.min(
+          1,
+          Math.max(0, elapsedAfterDrawSec / 0.65)
+        );
+        const slideDist = easeInOutQuad(exitProgress) * canvasHeight * 1.5;
+        handX += slideDist * 0.65;
+        handY += slideDist * 1.15;
+        if (exitProgress >= 1.0) {
+          shouldDrawHand = false;
+        }
       }
-    }
 
-    if (shouldDrawHand) {
-      ctx.save();
-      // Natural soft hand shadow for depth
-      ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
-      ctx.shadowBlur = Math.round(16 * (canvasWidth / 1920));
-      ctx.shadowOffsetX = Math.round(12 * (canvasWidth / 1920));
-      ctx.shadowOffsetY = Math.round(14 * (canvasWidth / 1920));
-      ctx.drawImage(handImg, handX, handY, handW, handH);
-      ctx.restore();
+      if (shouldDrawHand) {
+        ctx.save();
+        // Natural soft hand shadow for depth
+        ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
+        ctx.shadowBlur = Math.round(16 * (canvasWidth / 1920));
+        ctx.shadowOffsetX = Math.round(12 * (canvasWidth / 1920));
+        ctx.shadowOffsetY = Math.round(14 * (canvasWidth / 1920));
+        ctx.drawImage(handImg, handX, handY, handW, handH);
+        ctx.restore();
+      }
     }
   }
 
