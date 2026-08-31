@@ -9,6 +9,23 @@ const MOTION_ROTATION: MotionEffect[] = [
   "pulse",
 ];
 
+const AUTO_DEFAULT_TRANSITIONS: TransitionEffect[] = [
+  "crossfade",
+  "fade-to-black",
+  "flash-white",
+  "light-leak",
+  "zoom-in",
+  "whip-pan-left",
+  "whip-pan-right",
+  "slide-left",
+  "slide-right",
+  "circle-open",
+  "wipe-left",
+  "wipe-right",
+  "spin-360",
+  "stretch-glow",
+];
+
 export async function processMediaFilesToClips(
   files: File[]
 ): Promise<TimelineClip[]> {
@@ -68,7 +85,10 @@ export async function processMediaFilesToClips(
       durationSec: 4,
       parsedTimestampSec: parsedTs,
       motion: MOTION_ROTATION[index % MOTION_ROTATION.length],
-      transition: index === 0 ? "cut" : "crossfade",
+      transition:
+        index === 0
+          ? "cut"
+          : AUTO_DEFAULT_TRANSITIONS[(index - 1) % AUTO_DEFAULT_TRANSITIONS.length],
       transitionDuration: 0.5,
     };
 
@@ -132,7 +152,11 @@ export function buildAutonomousTimeline(
       endSec: Number(end.toFixed(2)),
       durationSec: Number((end - start).toFixed(2)),
       motion: MOTION_ROTATION[i % MOTION_ROTATION.length],
-      transition: isFirst ? "cut" : "crossfade",
+      transition: isFirst
+        ? "cut"
+        : current.transition && current.transition !== "cut"
+        ? current.transition
+        : AUTO_DEFAULT_TRANSITIONS[(i - 1) % AUTO_DEFAULT_TRANSITIONS.length],
     });
   }
 

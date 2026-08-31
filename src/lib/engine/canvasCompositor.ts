@@ -127,8 +127,52 @@ export function renderCompositorFrame({
       )
     );
 
-    if (enableDoodle) {
-      // Doodle Whiteboard Hand-Drawn Animation
+    // Check transition overlap with next clip (for both regular video & Doodle Flash)
+    const timeRemaining = currentClip.endSec - currentTimeSec;
+    const isTransitioning =
+      nextClip &&
+      nextClip.transition !== "cut" &&
+      timeRemaining <= (nextClip.transitionDuration || 0.6);
+
+    if (isTransitioning && nextClip) {
+      const transDuration = Math.max(0.1, nextClip.transitionDuration || 0.6);
+      const transProgress = Math.max(
+        0,
+        Math.min(1, 1 - timeRemaining / transDuration)
+      );
+
+      const incomingProgress = Math.max(
+        0,
+        Math.min(
+          1,
+          (currentTimeSec - nextClip.startSec) /
+            Math.max(0.1, nextClip.durationSec)
+        )
+      );
+
+      // Render transition composite
+      ctx.save();
+      renderTransitionComposite(
+        ctx,
+        currentClip,
+        nextClip,
+        clipProgress,
+        incomingProgress,
+        transProgress,
+        nextClip.transition,
+        width,
+        height,
+        baseFilter,
+        enableVintageFilmReel,
+        currentTimeSec,
+        enableDoodle,
+        doodlePaperStyle,
+        doodleDrawDurationRatio,
+        enableDoodleZoom
+      );
+      ctx.restore();
+    } else if (enableDoodle) {
+      // Normal Doodle Whiteboard Hand-Drawn Animation
       renderDoodleClip({
         ctx,
         clip: currentClip,
@@ -141,62 +185,20 @@ export function renderCompositorFrame({
         currentTimeSec,
       });
     } else {
-      // Check transition overlap with next clip
-      const timeRemaining = currentClip.endSec - currentTimeSec;
-      const isTransitioning =
-        nextClip &&
-        nextClip.transition !== "cut" &&
-        timeRemaining <= (nextClip.transitionDuration || 0.6);
-
-      if (isTransitioning && nextClip) {
-        const transDuration = Math.max(0.1, nextClip.transitionDuration || 0.6);
-        const transProgress = Math.max(
-          0,
-          Math.min(1, 1 - timeRemaining / transDuration)
-        );
-
-        const incomingProgress = Math.max(
-          0,
-          Math.min(
-            1,
-            (currentTimeSec - nextClip.startSec) /
-              Math.max(0.1, nextClip.durationSec)
-          )
-        );
-
-        // Render transition composite
-        ctx.save();
-        renderTransitionComposite(
-          ctx,
-          currentClip,
-          nextClip,
-          clipProgress,
-          incomingProgress,
-          transProgress,
-          nextClip.transition,
-          width,
-          height,
-          baseFilter,
-          enableVintageFilmReel,
-          currentTimeSec
-        );
-        ctx.restore();
-      } else {
-        // Normal single clip rendering with Ken Burns
-        ctx.save();
-        renderSingleClip(
-          ctx,
-          currentClip,
-          clipProgress,
-          width,
-          height,
-          1.0,
-          baseFilter,
-          enableVintageFilmReel,
-          currentTimeSec
-        );
-        ctx.restore();
-      }
+      // Normal single clip rendering with Ken Burns
+      ctx.save();
+      renderSingleClip(
+        ctx,
+        currentClip,
+        clipProgress,
+        width,
+        height,
+        1.0,
+        baseFilter,
+        enableVintageFilmReel,
+        currentTimeSec
+      );
+      ctx.restore();
     }
   } else if (clips.length > 0) {
     // Clamped fallback to first or last clip
@@ -321,34 +323,48 @@ function renderTransitionComposite(
   height: number,
   filterStr: string = "none",
   enableVintageFilmReel: boolean = false,
-  currentTimeSec: number = 0
+  currentTimeSec: number = 0,
+  enableDoodle: boolean = false,
+  doodlePaperStyle: "auto" | "whiteboard" | "paper" | "chalkboard" = "auto",
+  doodleDrawDurationRatio: number = 0.75,
+  enableDoodleZoom: boolean = false
 ) {
   const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+  const renderClip = (
+    clip: TimelineClip,
+    prog: number,
+    alpha: number = 1.0
+  ) => {
+    if (alpha <= 0.001) return;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+    if (enableDoodle) {
+      renderDoodleClip({
+        ctx,
+        clip,
+        clipProgress: prog,
+        canvasWidth: width,
+        canvasHeight: height,
+        drawDurationRatio: doodleDrawDurationRatio,
+        paperStyle: doodlePaperStyle,
+        enableDoodleZoom,
+        currentTimeSec,
+      });
+    } else {
+      renderClip(clip, prog, 1.0);
+    }
+    ctx.restore();
+  };
 
   switch (transition) {
     case "crossfade": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
       break;
     }
@@ -357,26 +373,10 @@ function renderTransitionComposite(
       ctx.save();
       if (t < 0.5) {
         const outAlpha = 1 - t * 2;
-        renderSingleClip(
-          ctx,
-          outgoingClip,
-          outgoingProgress,
-          width,
-          height,
-          outAlpha,
-          filterStr
-        );
+        renderClip(outgoingClip, outgoingProgress, outAlpha);
       } else {
         const inAlpha = (t - 0.5) * 2;
-        renderSingleClip(
-          ctx,
-          incomingClip,
-          incomingProgress,
-          width,
-          height,
-          inAlpha,
-          filterStr
-        );
+        renderClip(incomingClip, incomingProgress, inAlpha);
       }
       ctx.restore();
       break;
@@ -385,27 +385,11 @@ function renderTransitionComposite(
     case "flash-white": {
       ctx.save();
       if (t < 0.5) {
-        renderSingleClip(
-          ctx,
-          outgoingClip,
-          outgoingProgress,
-          width,
-          height,
-          1.0,
-          filterStr
-        );
+        renderClip(outgoingClip, outgoingProgress, 1.0);
         ctx.fillStyle = `rgba(255, 255, 255, ${t * 2})`;
         ctx.fillRect(0, 0, width, height);
       } else {
-        renderSingleClip(
-          ctx,
-          incomingClip,
-          incomingProgress,
-          width,
-          height,
-          1.0,
-          filterStr
-        );
+        renderClip(incomingClip, incomingProgress, 1.0);
         ctx.fillStyle = `rgba(255, 255, 255, ${(1 - t) * 2})`;
         ctx.fillRect(0, 0, width, height);
       }
@@ -415,27 +399,11 @@ function renderTransitionComposite(
 
     case "light-leak": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
 
       ctx.save();
@@ -465,27 +433,11 @@ function renderTransitionComposite(
 
     case "glow-flash": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
 
       ctx.save();
@@ -514,15 +466,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(outScale, outScale);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0 - t,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0 - t);
       ctx.restore();
 
       ctx.save();
@@ -530,15 +474,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(inScale, inScale);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
       break;
     }
@@ -549,15 +485,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(Math.max(0.1, outScale), Math.max(0.1, outScale));
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0 - t,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0 - t);
       ctx.restore();
 
       ctx.save();
@@ -565,15 +493,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(inScale, inScale);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
       break;
     }
@@ -584,15 +504,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(blurScale, blurScale);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0 - t,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0 - t);
       ctx.restore();
 
       ctx.save();
@@ -600,15 +512,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(inScale, inScale);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
       break;
     }
@@ -619,15 +523,7 @@ function renderTransitionComposite(
       const sliceHeight = height / sliceCount;
 
       ctx.save();
-      renderSingleClip(
-        ctx,
-        t < 0.5 ? outgoingClip : incomingClip,
-        t < 0.5 ? outgoingProgress : incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(t < 0.5 ? outgoingClip : incomingClip, t < 0.5 ? outgoingProgress : incomingProgress, 1.0);
 
       ctx.globalCompositeOperation = "screen";
       ctx.save();
@@ -656,15 +552,7 @@ function renderTransitionComposite(
       ctx.translate(width / 2, height / 2);
       ctx.scale(stretchX, 1.0);
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        t < 0.5 ? outgoingClip : incomingClip,
-        t < 0.5 ? outgoingProgress : incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(t < 0.5 ? outgoingClip : incomingClip, t < 0.5 ? outgoingProgress : incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -673,28 +561,12 @@ function renderTransitionComposite(
       const offset = ease * width;
       ctx.save();
       ctx.translate(-offset, 0);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate(width - offset, 0);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -703,28 +575,12 @@ function renderTransitionComposite(
       const offset = ease * width;
       ctx.save();
       ctx.translate(offset, 0);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate(-width + offset, 0);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -733,28 +589,12 @@ function renderTransitionComposite(
       const offset = ease * height;
       ctx.save();
       ctx.translate(0, -offset);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate(0, height - offset);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -763,28 +603,12 @@ function renderTransitionComposite(
       const offset = ease * height;
       ctx.save();
       ctx.translate(0, -offset);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate(0, -height + offset);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -792,28 +616,12 @@ function renderTransitionComposite(
     case "slide-left": {
       ctx.save();
       ctx.translate(-t * width, 0);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate((1 - t) * width, 0);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -821,43 +629,19 @@ function renderTransitionComposite(
     case "slide-right": {
       ctx.save();
       ctx.translate(t * width, 0);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
       ctx.translate(-(1 - t) * width, 0);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
 
     case "circle-open": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.restore();
 
       ctx.save();
@@ -865,15 +649,7 @@ function renderTransitionComposite(
       ctx.beginPath();
       ctx.arc(width / 2, height / 2, maxRadius * ease, 0, Math.PI * 2);
       ctx.clip();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
@@ -885,15 +661,7 @@ function renderTransitionComposite(
       ctx.rotate(angle);
       ctx.scale(Math.max(0.01, 1 - ease), Math.max(0.01, 1 - ease));
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0 - t,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0 - t);
       ctx.restore();
 
       ctx.save();
@@ -901,83 +669,35 @@ function renderTransitionComposite(
       ctx.rotate(angle);
       ctx.scale(Math.max(0.01, ease), Math.max(0.01, ease));
       ctx.translate(-width / 2, -height / 2);
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        t,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, t);
       ctx.restore();
       break;
     }
 
     case "wipe-left": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.beginPath();
       ctx.rect(width * (1 - t), 0, width * t, height);
       ctx.clip();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
 
     case "wipe-right": {
       ctx.save();
-      renderSingleClip(
-        ctx,
-        outgoingClip,
-        outgoingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(outgoingClip, outgoingProgress, 1.0);
       ctx.beginPath();
       ctx.rect(0, 0, width * t, height);
       ctx.clip();
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       ctx.restore();
       break;
     }
 
     default: {
-      renderSingleClip(
-        ctx,
-        incomingClip,
-        incomingProgress,
-        width,
-        height,
-        1.0,
-        filterStr
-      );
+      renderClip(incomingClip, incomingProgress, 1.0);
       break;
     }
   }
@@ -1326,8 +1046,8 @@ function renderDoodleClip({
     const handH = handImg.naturalHeight * handScale;
 
     // Calibrated EXPO Marker Tip Anchor for updated hand image (1024x1536 Portrait)
-    const TIP_X_RATIO = 0.0635;
-    const TIP_Y_RATIO = 0.1810;
+    const TIP_X_RATIO = 0.0713;
+    const TIP_Y_RATIO = 0.1732;
 
     let handX = markerTipX - TIP_X_RATIO * handW;
     let handY = markerTipY - TIP_Y_RATIO * handH;
