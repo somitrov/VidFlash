@@ -1,359 +1,400 @@
 =====================================================================
 TRYAITODAY — PROFESSIONAL DOODLE EXPLAINER
 DOODLE IMAGE MAKER MASTER PROMPT 2
+FINAL NANO BANANA 2 / GOOGLE FLOW VERSION
 =====================================================================
 
-Works for ANY theme / ANY timestamped script.
+PURPOSE
 
-Turns a timestamped explainer script into Google Flow image prompts named
-by timecode for TryAIToday AutoEditor.
+Works for ANY theme and ANY timestamped explainer script.
 
-The entire video must use ONE consistent premium visual language:
+Your job is to convert the script into concise, highly effective
+image-generation prompts for Google Flow / Nano Banana 2.
 
-THICK BLACK MARKER
-+
-HAND-DRAWN DOODLE ILLUSTRATION
-+
-CLEAN WHITE CANVAS
-+
-SELECTIVE COLOR ACCENTS
-+
-BOLD HANDWRITTEN MARKER TYPOGRAPHY
-+
-CLEAR VISUAL STORYTELLING
-
-IMPORTANT:
-
-The final image should LOOK like a doodle illustration drawn on a blank
-digital canvas.
-
-It must NOT look like a photograph of a physical whiteboard.
-
-There must be NO physical board surrounding the artwork.
-
-
-=====================================================================
-YOUR ROLE
-=====================================================================
-
-I paste a timestamped explainer script.
-
-You return ONE image prompt per meaningful visual beat.
-
-Each visual beat must be named using its starting timecode.
-
-The #1 objective:
-
-EVERY IMAGE MUST LOOK LIKE IT BELONGS TO THE SAME DOODLE EXPLAINER VIDEO.
+The generated images must all look like frames from ONE consistent
+professional doodle-animation video.
 
 
 =====================================================================
 CORE VISUAL IDENTITY
 =====================================================================
 
-The visual style is a premium modern hand-drawn doodle explainer.
+The visual identity is:
 
-Think:
+THICK BLACK MARKER
++
+HAND-DRAWN DOODLE
++
+CLEAN WHITE CANVAS
++
+SELECTIVE COLOR
++
+BOLD HANDWRITTEN MARKER LETTERING
++
+CLEAR VISUAL STORYTELLING
 
-- professional Doodly-style animation
-- professional VideoScribe-style animation
-- thick black marker drawing
-- hand-drawn educational illustration
-- expressive simplified characters
-- bold handwritten marker lettering
-- recognizable props
-- simple visual metaphors
-- hand-drawn arrows
-- simple diagrams
-- clean composition
-- large readable objects
-- selective color accents
-- generous negative space
+The visual style should resemble a premium professional
+Doodly / VideoScribe-style explainer illustration.
 
-The image must feel like an illustrator drew the artwork directly onto
-a CLEAN BLANK DIGITAL CANVAS.
+The image should feel hand-drawn by a skilled illustrator using
+a broad thick marker.
 
-The artwork should NOT appear to be photographed, mounted, framed,
-printed, or drawn on a physical board.
+It should look clean, simple, expressive and professional.
 
 
 =====================================================================
-CRITICAL BACKGROUND RULE — NO BOARD
+IMPORTANT — STYLE, NOT PHYSICAL WHITEBOARD
 =====================================================================
 
-THIS RULE IS ABSOLUTE.
+Use the VISUAL LANGUAGE of whiteboard doodle animation.
 
-The background must be a FLAT, CLEAN, PLAIN WHITE CANVAS.
+Do NOT create an actual physical whiteboard.
 
-There must be NO physical whiteboard.
+The final image must look like a clean digital illustration on
+a blank white canvas.
 
-Do NOT show:
 
+=====================================================================
+ABSOLUTE NO-BOARD RULE
+=====================================================================
+
+NEVER generate:
+
+- physical whiteboard
 - whiteboard frame
-- board border
+- outer frame
+- outer border
 - board edges
 - board corners
+- rounded board corners
 - black corner protectors
+- metal frame
+- wooden frame
+- plastic frame
 - mounting hardware
 - screws
 - clips
-- board tray
 - marker tray
-- markers sitting below the artwork
 - eraser tray
-- physical wall
-- surrounding room
+- wall
 - classroom
-- office wall
-- wooden frame
-- metal frame
-- plastic frame
-- rounded whiteboard corners
-- photographed whiteboard surface
-- perspective view of a board
-- visible board thickness
-- shadows cast by a physical board
-- reflections from a physical board
-- camera perspective of a board
+- room
+- photographed whiteboard
+- physical canvas
+- poster
+- board perspective
+- visible surface thickness
+- board reflections
 
-DO NOT create a rectangle around the artwork.
+The canvas must simply be:
 
-DO NOT create a border around the entire image.
-
-DO NOT create a frame around the image.
-
-DO NOT create decorative corners.
-
-The image should simply be:
-
-WHITE CANVAS
+CLEAN WHITE
 +
 DOODLE ARTWORK.
 
-The artwork may contain hand-drawn boxes, circles, separators, arrows,
-speech bubbles, panels or frames ONLY when those elements are required
-by the narration.
-
-Those internal visual elements must be part of the illustration and must
-NOT touch the outside edges to create an accidental outer frame.
+No physical object may surround the artwork.
 
 
 =====================================================================
-CANVAS RULE
+CANVAS
 =====================================================================
 
-The final composition should feel like an image exported directly from
-a professional doodle-animation software canvas.
+Use a clean flat white background.
 
-It should NOT feel like a photograph or screenshot of a whiteboard.
+Use generous white space.
 
-Use:
+Do not create textured paper.
 
-- clean white background
-- flat background
-- even white space
-- no physical surface texture
-- no environmental background
-- no board perspective
+Do not create colored backgrounds.
 
-The viewer should see the illustration itself,
-not the surface it was supposedly drawn on.
+Do not create environmental backgrounds unless the narration
+specifically requires a simple environment.
+
+Do not create a frame around the composition.
 
 
 =====================================================================
-THE MARKER RULE — CRITICAL
+16:9 LANDSCAPE
 =====================================================================
 
-The marker must look BROAD, THICK and DARK.
+Every generated scene is designed for:
+
+16:9 LANDSCAPE.
+
+Use the full horizontal space intelligently.
+
+Keep important elements comfortably inside the edges.
+
+Do not let artwork touch the outer boundaries in a way that creates
+an accidental border.
+
+
+=====================================================================
+MARKER STYLE — CRITICAL
+=====================================================================
+
+Use a BROAD, THICK, DARK BLACK MARKER.
 
 Target visual impression:
 
-approximately a 5–8 mm broad black whiteboard/felt-tip marker stroke
-when viewed at normal presentation size.
+approximately a 5–8 mm broad marker stroke at normal viewing size.
 
-The exact physical measurement is less important than the visual result.
+The exact millimeter measurement is not important.
+The VISUAL THICKNESS is important.
 
-The strokes must look:
+The marker must feel:
 
 - broad
 - thick
 - dark
-- bold
-- confident
 - firm
 - substantial
+- confident
 - hand-drawn
 - slightly organic
-- consistent
 
-The marker must feel like a REAL BROAD MARKER.
-
-Do NOT create thin line art.
+The drawing should immediately feel like it was made with
+a REAL BROAD MARKER.
 
 
 =====================================================================
 MARKER HARDNESS
 =====================================================================
 
-The marker should have a FIRM, CONTROLLED, MEDIUM-HARD CHARACTER.
+Use a:
 
-It should feel like a broad marker with strong ink coverage.
+FIRM
+CONTROLLED
+MEDIUM-HARD
+BROAD MARKER.
 
-It must NOT feel:
+Strong ink coverage.
 
-- watery
-- soft
-- fuzzy
-- feathered
-- bleeding
-- charcoal-like
-- pencil-like
-- brush-painted
+Slight natural marker irregularity is acceptable.
 
-Edges should be slightly organic but still clean and controlled.
+Do NOT create:
 
-The visual impression should be:
+- thin lines
+- pencil lines
+- hairline details
+- watery ink
+- fuzzy ink
+- feathered strokes
+- charcoal texture
+- watercolor
+- soft brush strokes
+- delicate pen lines
 
-THICK + DARK + FIRM + HAND-DRAWN.
+The target is:
+
+THICK + DARK + FIRM + CLEAN + HAND-DRAWN.
 
 
 =====================================================================
-LINE QUALITY
+HAND-DRAWN BUT PROFESSIONAL
 =====================================================================
 
-Use:
+The drawing must feel genuinely hand-drawn.
 
-- bold black marker outlines
-- thick internal lines
-- strong contours
-- confident strokes
-- slight natural marker irregularity
-- clear readable shapes
-- deliberate line placement
+However:
 
-The drawing should feel human-drawn without appearing messy.
-
-HAND-DRAWN DOES NOT MEAN ROUGH OR UNFINISHED.
+HAND-DRAWN DOES NOT MEAN MESSY.
 
 Avoid:
 
-- scratch marks
 - chaotic scribbles
-- excessive wobbling
+- excessive wobble
+- scratch marks
 - unfinished construction lines
-- broken accidental-looking strokes
-- pencil shading
-- technical drafting lines
-- ultra-clean vector geometry
+- random sketch marks
+- broken accidental strokes
+- childish drawing
+
+Use confident, deliberate marker strokes.
 
 
 =====================================================================
 BLACK-AND-WHITE FOUNDATION
 =====================================================================
 
-The majority of every image must remain black and white.
+The FOUNDATION of every image is black and white.
 
-Default:
+Most elements should remain:
 
-- black marker drawing
-- white background
-- black characters
-- black props
-- black arrows
-- black diagrams
-- black text
-- white negative space
+BLACK
++
+WHITE
++
+NEGATIVE SPACE.
 
-This black-and-white foundation is the identity of the entire video.
+Normally keep these black and white:
+
+- characters
+- ordinary clothing
+- secondary props
+- background elements
+- supporting symbols
+- normal arrows
+- ordinary charts
+- most diagrams
+- most text
 
 
 =====================================================================
-SELECTIVE COLOR RULE — CRITICAL
+SELECTIVE COLOR — MANDATORY DECISION SYSTEM
 =====================================================================
 
-DO NOT make everything colorful.
+Do NOT automatically make the image fully monochrome.
 
-DO NOT color every character.
+Do NOT make the image fully colorful.
 
-DO NOT color every prop.
+For EVERY scene:
 
-DO NOT color all clothing.
+FIRST identify the most important visual elements.
 
-DO NOT color every icon.
+THEN determine which important elements naturally benefit from color.
 
-DO NOT color every arrow.
+WHEN AN IMPORTANT ELEMENT CLEARLY BENEFITS FROM COLOR:
 
-DO NOT color the background.
+COLOR IT.
 
-DO NOT turn the scene into a full-color cartoon.
+Color is an attention mechanism.
 
-Instead:
+BLACK = normal/supporting information.
 
-USE COLOR ONLY ON THE MOST IMPORTANT VISUAL ELEMENTS.
+COLOR = important visual information.
 
-Color should function as VISUAL EMPHASIS.
+The purpose of color is:
 
-The viewer should subconsciously understand:
+"LOOK HERE — THIS MATTERS."
 
-BLACK = normal information.
 
-COLOR = important information.
+=====================================================================
+COLOR MUST FOLLOW IMPORTANCE
+=====================================================================
+
+Important visual elements can include:
+
+- key props
+- key objects
+- key products
+- key charts
+- key symbols
+- key results
+- key warnings
+- key solutions
+- important financial elements
+- important technology elements
+- strong visual metaphors
+
+Do not color something merely because it exists.
+
+
+=====================================================================
+DISTRIBUTED COLOR RULE — VERY IMPORTANT
+=====================================================================
+
+When multiple IMPORTANT visual elements exist in different areas
+of the composition:
+
+DISTRIBUTE the color accents across those important elements.
+
+Do NOT automatically put all color around one object.
+
+Do NOT automatically put all color on one side.
+
+Do NOT turn one section of the image into the "color section."
+
+Example:
+
+LEFT important finance prop → GOLD
+
+CENTER important concept symbol → BLUE
+
+RIGHT important growth chart → GREEN
+
+The result should contain several SMALL COLOR ANCHORS
+distributed across the composition.
+
+The color distribution should follow the visual structure,
+not random placement.
+
+
+=====================================================================
+COLOR CLUSTERING RULE
+=====================================================================
+
+Avoid large contiguous colored regions.
+
+Prefer:
+
+SMALL
++
+SEPARATE
++
+MEANINGFUL
+COLOR ACCENTS.
+
+Do NOT color:
+
+- entire characters
+- entire groups
+- entire backgrounds
+- entire environments
+- entire sides
+- large collections of secondary objects
+
+unless the narration specifically requires it.
 
 
 =====================================================================
 COLOR QUANTITY
 =====================================================================
 
-Most scenes should use:
+Typical scene:
 
-- zero color
-- one important colored element
-- two important colored elements
-- occasionally three related colored elements
+0–1 important color accents when the scene is simple.
 
-As a general rule, approximately only 5–20% of the meaningful visual
-content should contain color.
+2–3 important color accents when several important elements exist.
 
-Color should remain RARE enough that it catches attention immediately.
+Occasionally 4–5 SMALL accents when the narration contains several
+independent important visual targets.
 
+The image must remain overwhelmingly black and white.
 
-=====================================================================
-WHAT SHOULD RECEIVE COLOR
-=====================================================================
-
-Prioritize color for:
-
-- the main product
-- the key prop
-- the key result
-- the important chart
-- the important arrow
-- the main symbol
-- the strongest visual metaphor
-- the key warning
-- the key success indicator
-- the most important object in the narration
-
-The primary colored object should usually be one of the first things
-the viewer notices.
+Color should feel like HIGHLIGHTING,
+not full-color illustration.
 
 
 =====================================================================
-SEMANTIC COLOR RULE
+COLOR COVERAGE
 =====================================================================
 
-Color must have a visual reason.
+As a general target:
 
-Potential semantic associations:
+approximately 5–20% of the meaningful visual content may contain
+color.
+
+This is a GUIDELINE, not a mathematical requirement.
+
+The critical rule is:
+
+COLOR MUST REMAIN SELECTIVE.
+
+
+=====================================================================
+SEMANTIC COLOR
+=====================================================================
+
+Use meaningful color relationships.
 
 GREEN:
 growth
-progress
-success
-positive performance
-improvement
-money
 profit
+success
+progress
+positive movement
+improvement
 
 RED:
 danger
@@ -361,29 +402,30 @@ loss
 failure
 warning
 mistake
-negative outcome
+negative result
 urgency
 
 BLUE:
 technology
 software
-communication
-data
 digital systems
+data
+communication
+information
 trust
 
 GOLD / YELLOW:
 money
-value
 wealth
-important physical object
-attention
+coins
+value
+financial assets
+important valuable objects
 
 ORANGE:
 energy
 activity
 action
-urgency
 
 PURPLE:
 premium
@@ -391,711 +433,310 @@ special
 creative
 distinctive
 
-These are GUIDELINES, not mandatory rules.
-
-Choose color based on the narration.
-
-If color does not improve the visual:
-
-USE NO COLOR.
+Do not force these colors into scenes where they do not make sense.
 
 
 =====================================================================
-COLOR APPLICATION
+COLOR CONSISTENCY ACROSS THE VIDEO
 =====================================================================
 
-Color should normally appear as:
+Once an important concept receives a color,
+keep that color consistent in later scenes.
 
-- a filled portion of a key object
-- selected parts of a chart
-- a key arrow
-- a key icon
-- a product accent
-- a screen accent
-- a key symbol
-- a small important prop
+Examples:
 
-Do NOT color the complete image.
+growth = green
 
-Do NOT color the entire character.
+money = gold
 
-Do NOT color every object.
+technology = blue
 
-Do NOT color random decorative details.
+warning/loss = red
+
+product = established product color
 
 
 =====================================================================
-TEXT COLOR RULE
+TEXT COLOR
 =====================================================================
 
-TEXT MUST BE BLACK BY DEFAULT.
+ALL TEXT MUST BE BLACK BY DEFAULT.
 
-Important words do NOT automatically become colorful.
+Important text does NOT automatically become colorful.
 
-The preferred design is:
+Color belongs primarily to:
 
-BLACK HANDWRITTEN TEXT
+OBJECTS
 +
-BLACK MARKER DRAWINGS
+PROPS
 +
-SELECTIVE COLOR ON IMPORTANT OBJECTS.
+SYMBOLS
++
+CHARTS
++
+VISUAL ELEMENTS.
 
-Only use colored text when a specific narration concept genuinely requires
-it.
-
-Never make text colorful simply to make it attractive.
+Not typography.
 
 
 =====================================================================
 HANDWRITTEN TYPOGRAPHY
 =====================================================================
 
-When text is needed, it must look as though it was written using the SAME
-BROAD BLACK MARKER.
+When text is necessary,
+it should look physically written with the SAME broad black marker.
 
 Typography should be:
 
 - bold
 - thick
-- hand-drawn
+- handwritten
 - uppercase when appropriate
 - slightly irregular
-- clean
-- readable
+- rounded
 - confident
-- natural
-- marker-written
+- highly readable
 
-The lettering should have the same visual character as professional
-Doodly / VideoScribe-style marker handwriting.
+The style should feel like broad marker handwriting
+used in a professional doodle explainer.
 
 Avoid:
 
-- standard computer fonts
-- thin typography
+- computer fonts
+- thin fonts
 - serif fonts
 - elegant typography
 - corporate UI fonts
 - futuristic fonts
-- neon lettering
-- decorative scripts
-- bubble lettering
-- childish typography
+- neon fonts
+- decorative script
+- childish bubble lettering
 
-The text should look PHYSICALLY MARKER-WRITTEN.
+The text must feel:
 
-
-=====================================================================
-TEXT-FREE DEFAULT
-=====================================================================
-
-Do NOT add text unless it meaningfully improves the visual explanation.
-
-Avoid:
-
-- unnecessary titles
-- unnecessary captions
-- unnecessary labels
-- fake writing
-- fake documents
-- random numbers
-- random letters
-- UI text
-- decorative words
-
-Prefer:
-
-OBJECTS
-+
-SYMBOLS
-+
-ACTIONS
-+
-DIAGRAMS
-+
-VISUAL METAPHORS.
+MARKER-WRITTEN.
 
 
 =====================================================================
-MULTIPLE-IDEA COMPOSITION RULE — CRITICAL
+TEXT USAGE
 =====================================================================
 
-When the narration describes several RELATED things within the same
-visual beat, combine them into ONE coherent illustration.
+Text is optional.
+
+Do NOT add text simply to decorate a scene.
+
+Prefer visual communication through:
+
+- characters
+- props
+- symbols
+- arrows
+- diagrams
+- visual metaphors.
+
+When text is necessary:
+
+keep it SHORT.
+
+Normally:
+
+1–5 words.
+
+All text remains BLACK.
+
+
+=====================================================================
+MULTIPLE-IDEA RULE
+=====================================================================
+
+When several RELATED things are mentioned in the same visual beat,
+combine them into ONE coherent scene.
 
 Example:
 
-"Paper registers, Excel sheets and manual attendance waste staff time."
+"Paper registers, spreadsheets, manual attendance and payment tracking
+waste time."
 
-Do NOT create three separate visual ideas.
+ONE IMAGE:
 
-Create ONE scene containing:
+person
++
+paper register
++
+spreadsheet
++
+attendance sheet
++
+payment visual
++
+clock
++
+appropriate expression.
 
-- person
-- paper register
-- laptop/spreadsheet visual
-- attendance sheet
-- clock/time symbol
-- stressed body language
-
-All elements must visually belong together.
+Do NOT create separate disconnected mini-scenes.
 
 
 =====================================================================
-ONE BEAT = ONE WHITEBOARD-STYLE STORY
+ONE BEAT = ONE COMPLETE VISUAL IDEA
 =====================================================================
 
-DO NOT think:
+Do NOT think:
 
-"One sentence = one object."
+ONE SENTENCE = ONE OBJECT.
 
-Instead think:
+Think:
 
-"What SINGLE DOODLE ILLUSTRATION would allow the viewer to understand
-this entire narration beat immediately?"
+ONE VISUAL BEAT = ONE COMPLETE DOODLE STORY.
 
-The image may contain:
+A scene can contain:
 
-- one main character
+- a main character
 - several related props
 - symbols
 - arrows
-- a visual metaphor
-- a small diagram
-- one to three important colored elements
+- diagrams
+- visual metaphors
+- several small color accents
 
-Everything must form ONE coherent visual story.
+when they belong to the same idea.
 
 
 =====================================================================
-VISUAL HIERARCHY
-=====================================================================
-
-Every composition should contain:
-
 PRIMARY VISUAL
+=====================================================================
 
-The thing viewers should notice first.
+Every scene needs one clear PRIMARY VISUAL.
+
+The viewer should notice it first.
+
+Then:
 
 SUPPORTING VISUALS
 
-Objects that explain the main idea.
+Then:
 
-CONTEXTUAL VISUALS
+CONTEXTUAL VISUALS.
 
-Minimal elements that establish the situation.
-
-Do not give every object equal visual importance.
+Color can reinforce primary and secondary attention targets.
 
 
 =====================================================================
 COMPOSITION
 =====================================================================
 
-Use a clean open composition.
-
 Prefer:
 
-- large readable objects
 - clear grouping
-- natural spacing
+- large readable objects
 - strong silhouettes
+- natural spacing
 - generous white space
 - left-to-right flow
-- central focal subjects
-- purposeful arrows
-- simple visual organization
+- balanced visual weight
+- multiple attention anchors when appropriate
 
 Avoid:
 
-- crowded compositions
+- overcrowding
 - tiny objects everywhere
-- visual noise
-- excessive background detail
-- unnecessary decoration
+- random decorative doodles
+- equal importance for every object.
 
 
 =====================================================================
-WHITE SPACE
+VISUAL BALANCE
 =====================================================================
 
-White space is an intentional design element.
+Color, characters and major props should create BALANCE across the
+whole 16:9 composition.
 
-Leave breathing room around:
+If important visual elements exist on the:
 
-- characters
-- props
-- arrows
-- text
-- colored elements
+LEFT
+CENTER
+RIGHT
 
-Do not fill empty space simply because it exists.
+do not automatically concentrate all visual emphasis in one region.
 
-The artwork should feel clean and premium.
+Balance the important elements across the composition.
+
+Color should help guide the viewer's eye through the image.
 
 
 =====================================================================
 CHARACTER DESIGN
 =====================================================================
 
-Characters must look like professional hand-drawn doodle characters.
+Characters must be professional hand-drawn doodle characters.
 
 Use:
 
 - simplified heads
 - expressive eyes
 - simple eyebrows
-- simplified nose
+- simple nose
 - expressive mouth
-- readable hairstyles
+- recognizable hairstyle
 - simplified body anatomy
 - readable hands
-- expressive gestures
-- clear posture
+- readable gestures
+- expressive posture.
 
-Characters must remain primarily black and white.
+Characters should normally remain BLACK AND WHITE.
 
-Do NOT automatically color characters.
-
-
-=====================================================================
-CHARACTER EXPRESSION
-=====================================================================
-
-Emotion should be easy to read.
-
-Use:
-
-- eyebrows
-- eyes
-- mouth
-- head angle
-- body posture
-- hand gesture
-
-Examples:
-
-confused:
-raised eyebrow + tilted head
-
-stressed:
-hands on head + tense posture
-
-happy:
-open smile + relaxed posture
-
-confident:
-upright posture + clear gesture
-
-sad:
-lowered shoulders + downward gaze
-
-thinking:
-hand near chin + upward gaze
+Do not color characters unnecessarily.
 
 
 =====================================================================
 CHARACTER CONSISTENCY
 =====================================================================
 
-Recurring characters must remain recognizable.
+Recurring characters must remain visually recognizable.
 
-Differentiate using:
+Use:
 
 - hairstyle
 - beard
 - glasses
+- face shape
 - body shape
 - clothing silhouette
 - hat
-- accessories
+- accessory
 - signature prop
-- age cues
+- age cues.
 
-Because color is limited,
-DO NOT rely on clothing colors for character identity.
-
-
-=====================================================================
-HANDS
-=====================================================================
-
-Hands should be simple but readable.
-
-Show:
-
-- pointing
-- holding
-- typing
-- writing
-- presenting
-- pressing
-- counting
-- gesturing
-
-Avoid hyper-detailed fingers.
-
-
-=====================================================================
-OBJECT DESIGN
-=====================================================================
-
-Objects should be simplified but recognizable.
-
-Examples:
-
-phone:
-bold smartphone outline + minimal screen elements
-
-laptop:
-bold laptop outline + simple screen information
-
-document:
-simple page + a few marker lines
-
-calendar:
-simple calendar grid
-
-clock:
-bold recognizable clock
-
-database:
-simple stacked database symbol
-
-graph:
-bold axes + simple bars or line
-
-money:
-coins / bills / wallet
-
-gym equipment:
-simple recognizable silhouettes
-
-Objects must use the same broad black marker language.
-
-
-=====================================================================
-IMPORTANT PROP EMPHASIS
-=====================================================================
-
-When a prop is central to the narration:
-
-make it:
-
-- larger
-- clearer
-- more prominent
-- visually simple
-- easy to recognize
-
-That prop MAY be one of the selected color-accent elements.
-
-
-=====================================================================
-DIAGRAMS
-=====================================================================
-
-Use hand-drawn diagrams when the narration explains:
-
-- systems
-- workflows
-- processes
-- comparisons
-- relationships
-- cause and effect
-- sequences
-
-Use:
-
-- thick arrows
-- simple boxes
-- circles
-- connecting lines
-- grouping
-- simple charts
-
-All diagram elements should look hand-drawn.
-
-Avoid polished corporate infographic styling.
-
-
-=====================================================================
-ARROWS
-=====================================================================
-
-Arrows should be:
-
-- thick
-- black by default
-- hand-drawn
-- confident
-- readable
-
-An important arrow may be colored when it represents a major concept.
-
-Examples:
-
-growth → green
-
-decline → red
-
-general process → black
-
-Do not color every arrow.
-
-
-=====================================================================
-VISUAL METAPHOR RULE
-=====================================================================
-
-For abstract concepts, use simple visual metaphors.
-
-Examples:
-
-growth →
-upward arrow + larger coins
-
-time wasted →
-clock + stressed person
-
-automation →
-gears + computer + process arrows
-
-confusion →
-tangled arrows + scattered papers
-
-organization →
-mess transformed into neat arrangement
-
-security →
-shield + lock
-
-communication →
-people + connected speech bubbles
-
-success →
-check mark + positive result
-
-failure →
-falling chart + X
-
-
-=====================================================================
-PROCESS VISUALIZATION
-=====================================================================
-
-For processes, prefer:
-
-STEP 1 → STEP 2 → STEP 3 → RESULT
-
-Use left-to-right visual flow whenever practical.
-
-Show the steps within one coherent composition when they belong to the
-same visual beat.
-
-
-=====================================================================
-BEFORE / AFTER
-=====================================================================
-
-When narration compares two states:
-
-show both states in the same image whenever practical.
-
-Example:
-
-OLD WAY:
-paperwork + confusion + manual work
-
-NEW WAY:
-organized system + clear workflow + improved outcome
-
-The old side can use subtle red accents when appropriate.
-
-The new side can use subtle green or blue accents when appropriate.
-
-Do not make either entire side colorful.
-
-
-=====================================================================
-NEGATION RULE
-=====================================================================
-
-When narration explicitly says:
-
-- no
-- none
-- not
-- never
-- without
-- avoid
-- eliminate
-- ruled out
-- didn't
-- wasn't
-- cannot
-- couldn't
-
-visually communicate the negation.
-
-Default:
-
-a bold BLACK hand-drawn X.
-
-The X should look like the same broad marker.
-
-A limited red accent may be used when the concept is specifically about
-danger, loss or warning.
-
-Do not add an X when the narration does not justify one.
-
-
-=====================================================================
-HISTORICAL / CULTURAL VISUALS
-=====================================================================
-
-Use simplified recognizable cues.
-
-Do NOT use realistic historical rendering.
-
-Examples:
-
-hunter-gatherer:
-shelter + basket + spear + fire
-
-early agriculture:
-field + crops + tools + storage
-
-ancient city:
-simple buildings + carts + pottery
-
-modern office:
-desk + laptop + papers + phone
-
-Keep everything in the same doodle language.
-
-
-=====================================================================
-ENVIRONMENT RULE
-=====================================================================
-
-Environments should be communicated using a LIMITED number of recognizable
-objects.
-
-Do NOT build realistic rooms.
-
-Example:
-
-office:
-desk + laptop + chair + papers
-
-gym:
-bench + dumbbells + treadmill
-
-home:
-sofa + lamp + table
-
-street:
-road + building outline + vehicle
-
-The environment should support the idea,
-not dominate the frame.
-
-
-=====================================================================
-NO PHYSICAL SURFACE
-=====================================================================
-
-The artwork exists on a flat digital-style white canvas.
-
-There must be NO indication that the viewer is looking at:
-
-- a real whiteboard
-- a classroom board
-- a mounted board
-- a wall
-- a sheet of paper
-- a physical canvas
-- a poster
-- a framed illustration
-
-The white background must remain FLAT and CLEAN.
-
-No surface perspective.
-
-
-=====================================================================
-NO OUTER FRAME
-=====================================================================
-
-NEVER create an outer frame around the image.
-
-NEVER create borders around the full canvas.
-
-NEVER create corner marks.
-
-NEVER create black strips around the edges.
-
-NEVER create gray or black outer edges.
-
-NEVER create a tray below the artwork.
-
-NEVER create board hardware.
-
-NEVER create rounded board corners.
-
-NEVER make the image appear physically mounted.
-
-The composition must extend naturally within the 16:9 canvas with clean
-white margins.
-
-
-=====================================================================
-NO CAMERA PHOTOGRAPHY
-=====================================================================
-
-The image must NOT look photographed.
-
-Do NOT use:
-
-- camera perspective
-- board reflections
-- physical surface shadows
-- room lighting
-- lens blur
-- realistic depth of field
-- environmental reflections
-- photographic texture
+Do not depend on clothing color for identity.
 
 
 =====================================================================
 RECURRING CHARACTERS — FLOW #NAME → @NAME
 =====================================================================
 
-Flow uses:
+Use:
 
 #Name
 
-to CREATE and NAME recurring character references.
+to CREATE a recurring-character reference.
 
-Flow uses:
+Use:
 
 @Name
 
-to REFER BACK to an already-created recurring character.
+to reuse an existing recurring-character reference.
 
-NEVER use @Name before the corresponding #Name reference exists.
+NEVER use @Name before the corresponding #Name exists.
 
 
 =====================================================================
 HOW TO IDENTIFY RECURRING CHARACTERS
 =====================================================================
 
-Scan the ENTIRE script before generating scene prompts.
+Scan the ENTIRE script.
 
 Identify every SPECIFIC PERSON who appears in TWO OR MORE visual beats.
 
-Create #Name references only for those recurring individuals.
+Only those recurring people receive #Name references.
 
 Do NOT create references for:
 
@@ -1110,101 +751,458 @@ Do NOT create references for:
 STAGE 1 — CHARACTER REFERENCES
 =====================================================================
 
-If recurring characters exist:
+If recurring specific characters exist:
 
-FIRST:
-identify them from the entire script.
-
-SECOND:
-create one #Name reference for each recurring specific person.
-
-THIRD:
-STOP.
+1. Scan the entire script.
+2. Identify recurring characters.
+3. Create one #Name reference per recurring character.
+4. STOP.
 
 Do NOT generate timeline scenes yet.
 
 
 =====================================================================
-STAGE 1 REFERENCE REQUIREMENTS
+STAGE 1 REFERENCE STYLE
 =====================================================================
 
-Each recurring-character reference should establish:
+Each reference should establish:
 
 - full body
 - face
 - hairstyle
 - body proportions
 - clothing silhouette
-- distinctive visual cue
-- useful signature prop
+- distinctive cue
+- useful prop when appropriate
 - expressive style
 - thick marker style
-- monochrome foundation
-- plain white background
+- primarily black-and-white design.
 
-The reference must NOT contain:
+Reference background:
 
-- board
-- frame
-- border
-- room
-- environment
-- physical whiteboard
-- decorative background
+CLEAN WHITE CANVAS.
 
-
-=====================================================================
-STAGE 1 REFERENCE FORMAT
-=====================================================================
-
-Example:
-
-#RichardLee
-full-body professional whiteboard doodle character, approachable adult man,
-simplified expressive face, readable eyes, simple eyebrows, simplified nose,
-clear expressive mouth, short neatly shaped hair, believable simplified
-doodle anatomy, collared shirt, simple trousers, small notebook as
-identifying prop, clearly readable hands and shoes, broad thick black
-marker strokes, firm medium-hard marker character, clean organic hand-drawn
-contours, bold readable marker details, primarily black-and-white
-appearance, plain flat clean white canvas, generous negative space, no
-physical whiteboard, no board frame, no borders, no corners, no tray, no
-wall, no room, no photographic surface, no 3D rendering, no anime, no
-chibi, no watercolor, no painterly rendering, no glossy CGI
+NO BOARD.
+NO FRAME.
+NO BORDER.
+NO CORNERS.
+NO ROOM.
+NO ENVIRONMENT.
 
 
 =====================================================================
 RECURRING CHARACTER RULE
 =====================================================================
 
-Once a recurring character reference exists:
+Once a reference exists:
 
-DO NOT re-describe the character.
+DO NOT re-describe the person's appearance.
 
-Do NOT write:
-
-"the same man"
-
-"the same trainer"
-
-"Richard Lee with the same appearance"
-
-Instead use:
+Use:
 
 @RichardLee
 
-The @Name reference controls the visual identity.
+instead of:
+
+"the same man"
+
+or:
+
+"Richard Lee with short hair..."
+
+
+=====================================================================
+VISUAL METAPHOR RULE
+=====================================================================
+
+Use simple visual metaphors for abstract concepts.
+
+Examples:
+
+growth →
+upward arrow + increasing chart
+
+time wasted →
+clock + stressed person
+
+automation →
+gears + computer + arrows
+
+confusion →
+tangled arrows
+
+organization →
+mess becoming neat
+
+security →
+shield + lock
+
+communication →
+people + connected speech bubbles
+
+success →
+check mark + rising chart
+
+failure →
+falling chart + X
+
+money →
+coins + wallet
+
+
+=====================================================================
+DIAGRAM RULE
+=====================================================================
+
+When the narration explains:
+
+- systems
+- workflows
+- processes
+- comparisons
+- cause and effect
+- sequences
+- relationships
+
+use simple hand-drawn diagrams.
+
+Use:
+
+- thick arrows
+- circles
+- simple boxes
+- connectors
+- simple charts.
+
+Do not create polished corporate vector graphics.
+
+
+=====================================================================
+ARROW RULE
+=====================================================================
+
+Arrows are BLACK by default.
+
+A key arrow may receive color if it represents a major concept.
+
+Examples:
+
+growth → green
+
+decline → red
+
+technology flow → blue
+
+normal process → black
+
+Do not color every arrow.
+
+
+=====================================================================
+CHART RULE
+=====================================================================
+
+Charts should be simple and hand-drawn.
+
+Use:
+
+- thick axes
+- simple bars
+- simple lines
+- minimal detail.
+
+Color only the important chart elements.
+
+
+=====================================================================
+BEFORE / AFTER RULE
+=====================================================================
+
+When narration compares two states,
+show them together whenever practical.
+
+OLD:
+
+mostly black and white
++
+optional small red problem accent
+
+NEW:
+
+mostly black and white
++
+optional small green/blue solution accent.
+
+Do NOT color entire sides.
+
+
+=====================================================================
+PROBLEM → SOLUTION RULE
+=====================================================================
+
+Show the transformation visually.
+
+PROBLEM:
+
+- clutter
+- confusion
+- stress
+- warning
+- loss
+
+SOLUTION:
+
+- organization
+- clarity
+- efficiency
+- progress
+- positive result
+
+Use selective color on important visual anchors.
+
+
+=====================================================================
+NEGATION RULE
+=====================================================================
+
+When narration explicitly means:
+
+- no
+- none
+- not
+- never
+- without
+- avoid
+- eliminate
+- ruled out
+- didn't
+- wasn't
+- cannot
+- couldn't
+
+use a bold BLACK hand-drawn X by default.
+
+The X must use the same thick marker style.
+
+Use red only when red is semantically justified by danger,
+loss or warning.
+
+Do not add X marks without narrative justification.
+
+
+=====================================================================
+ENVIRONMENT RULE
+=====================================================================
+
+Environments should be implied with a limited number of recognizable
+objects.
+
+Do not create fully rendered realistic rooms.
+
+Examples:
+
+office:
+desk + laptop + chair + papers
+
+gym:
+bench + dumbbells + treadmill
+
+home:
+sofa + table + lamp
+
+street:
+road + building outline + vehicle
+
+The environment must support the idea,
+not dominate the image.
+
+
+=====================================================================
+NO PHOTOGRAPHIC LOOK
+=====================================================================
+
+Do NOT use:
+
+- photorealism
+- realistic camera perspective
+- cinematic lighting
+- lens blur
+- depth of field
+- film grain
+- photographic textures
+- realistic reflections
+- realistic environmental shadows.
+
+
+=====================================================================
+LIGHTING
+=====================================================================
+
+Do not use cinematic lighting.
+
+Do not use glossy rendering.
+
+Do not use realistic dramatic shadows.
+
+The visual language is:
+
+BLACK MARKER
++
+WHITE CANVAS
++
+SELECTIVE COLOR.
+
+
+=====================================================================
+CRITICAL OUTPUT RULE — KEEP GENERATED IMAGE PROMPTS SHORT
+=====================================================================
+
+THIS IS ONE OF THE MOST IMPORTANT RULES.
+
+The image-generation prompts you produce for individual scenes
+MUST be concise.
+
+Do NOT repeat this entire master prompt inside every scene.
+
+Do NOT write giant 500–1000 word image prompts.
+
+Do NOT repeat the same style instructions again and again.
+
+The master prompt already establishes the visual system.
+
+Each generated scene prompt should contain only:
+
+1. WHAT IS HAPPENING
+2. WHO / WHAT IS PRESENT
+3. IMPORTANT PROPS
+4. COMPOSITION
+5. WHICH IMPORTANT ELEMENTS RECEIVE COLOR
+6. A SHORT STYLE REMINDER
+
+
+=====================================================================
+SHORT PROMPT LENGTH
+=====================================================================
+
+A normal individual scene prompt should generally be:
+
+approximately 50–120 words.
+
+Simple scenes may be shorter.
+
+Complex scenes may be slightly longer.
+
+Do NOT make the prompt unnecessarily long.
+
+
+=====================================================================
+SCENE PROMPT STRUCTURE
+=====================================================================
+
+Use this structure:
+
+[composition], [main subject/action], [important supporting props],
+[visual relationship], [important color accents], [short locked style reminder].
+
+
+=====================================================================
+SHORT STYLE REMINDER
+=====================================================================
+
+At the END of every scene prompt, use a concise style reminder such as:
+
+"thick broad 5–8 mm black marker, firm medium-hard hand-drawn doodle
+style, bold black handwritten lettering when needed, clean white canvas,
+selective meaningful color accents distributed across important visual
+elements, professional Doodly/VideoScribe-inspired style, 16:9 landscape,
+no physical board, no frame, no border"
+
+
+Do NOT append the entire master style block to every scene.
+
+
+=====================================================================
+EXAMPLE OF THE CORRECT PROMPT LENGTH
+=====================================================================
+
+#0-00
+
+wide landscape composition, a young man planning his finances at a
+desk, wallet and savings jar on the left, simple investment chart and
+coin stacks on the right, thoughtful expression, bold arrow connecting
+saving to investing, gold accent on the important coins, green accent
+on the key growth arrow, everything else black and white, thick broad
+5–8 mm black marker, firm medium-hard hand-drawn doodle style, bold
+marker handwriting, clean white canvas, selective color, no physical
+board, no frame, no border, 16:9
+
+
+This is the preferred prompt style.
+
+Short.
+Specific.
+Visual.
+No unnecessary repetition.
+
+
+=====================================================================
+COLOR DECISION INSIDE SHORT PROMPTS
+=====================================================================
+
+Every scene prompt must explicitly identify important color targets
+when they exist.
+
+Do NOT simply write:
+
+"selective color."
+
+Instead write:
+
+"gold accent on the key money stack, green accent on the growth arrow."
+
+This makes the intended color behavior clearer to Nano Banana 2.
+
+
+=====================================================================
+DISTRIBUTED COLOR IN SHORT PROMPTS
+=====================================================================
+
+When important elements are located in different parts of the frame,
+mention them separately.
+
+Example:
+
+"gold accent on the important money prop at left, blue accent on the
+central technology symbol, green accent on the growth chart at right."
+
+This is preferred over:
+
+"some colorful accents."
+
+The model must understand WHERE the color goes.
+
+
+=====================================================================
+DO NOT CREATE COLOR CLUSTERS
+=====================================================================
+
+If important objects are distributed across the composition,
+do not place all color on a single object or single side.
+
+Use small independent color accents across the important targets.
+
+Do not create a large connected colorful region.
 
 
 =====================================================================
 VISUAL BEAT RULE
 =====================================================================
 
-Aim for approximately:
+Aim for:
 
 ONE IMAGE EVERY 3–6 SECONDS.
 
-Create a new beat when there is a meaningful change in:
+Create a new visual beat when there is a meaningful change in:
 
 - idea
 - subject
@@ -1213,105 +1211,49 @@ Create a new beat when there is a meaningful change in:
 - process
 - comparison
 - metaphor
-- narrative purpose
+- narrative purpose.
 
-Do NOT mechanically create one image for every sentence.
+Do NOT mechanically create one image per sentence.
 
-Do NOT create separate images for every individual noun.
+Do NOT create one image per noun.
 
-Combine related narration into one coherent visual composition.
-
-
-=====================================================================
-STAGE 2 — SCENE GENERATION
-=====================================================================
-
-Before writing every scene:
-
-1. Determine the core visual idea.
-2. Determine which elements belong together.
-3. Determine the main subject.
-4. Determine supporting props.
-5. Decide whether a color accent is genuinely useful.
-6. Choose zero, one, two or at most a few important color accents.
-7. Choose the clearest composition.
-8. Use @Name where applicable.
-9. Remove unnecessary detail.
-10. Keep the canvas clean and unframed.
-11. Append the exact locked style phrase.
-12. Output the scene using its starting timecode.
+Combine related narration into one coherent visual.
 
 
 =====================================================================
-SCENE THINKING FRAMEWORK
+STAGE 2 — GENERATION WORKFLOW
 =====================================================================
 
-PRIMARY IDEA:
-What must the viewer understand?
+Before generating every scene:
 
-PRIMARY VISUAL:
-What should they notice first?
-
-SUPPORTING ELEMENTS:
-What explains the idea?
-
-RELATIONSHIP:
-How do those elements interact?
-
-COLOR:
-Which element, if any, deserves selective color?
-
-SIMPLIFICATION:
-What can be removed?
-
-COMPOSITION:
-How should the elements be arranged?
-
-BACKGROUND:
-KEEP IT A CLEAN BLANK CANVAS.
-
-FRAME:
-NONE.
+1. Determine the core idea.
+2. Determine the primary visual.
+3. Determine supporting visuals.
+4. Combine related concepts.
+5. Identify important colorable elements.
+6. Determine where those elements are located.
+7. Distribute color across important targets when appropriate.
+8. Keep secondary elements black and white.
+9. Use @Name when required.
+10. Keep the final prompt concise.
+11. Include the short style reminder.
+12. Output the timecode and prompt.
 
 
 =====================================================================
 SCENE FORMAT
 =====================================================================
 
-#0-00
-wide doodle composition, [specific visual idea from narration], [specific
-characters], [important props], [actions and relationships], [visual
-metaphor or diagram if necessary], [one or two important props selectively
-colored if justified], clean open composition with generous white negative
-space, professional premium doodle illustration, broad thick dark black
-marker strokes visually equivalent to a 5–8 mm marker, firm medium-hard
-marker character, clean confident organic hand-drawn contours, bold readable
-black marker outlines and internal details, expressive simplified doodle
-characters, believable simplified anatomy, readable hands and gestures,
-bold natural hand-drawn marker lettering only when necessary, flat clean
-white canvas with NO physical whiteboard, NO outer frame, NO border, NO
-corners, NO tray, NO board edges, NO wall, NO room, NO physical surface,
-strong visual hierarchy, mostly black-and-white visual foundation with only
-one to three carefully selected semantically important color accents when
-appropriate, selective color applied to key props, key symbols, key charts,
-key products or key results rather than entire characters or scenes, all
-text black by default, professional Doodly and VideoScribe-inspired
-explainer aesthetic, clean educational storytelling, hand-drawn arrows and
-diagrams, simple visual metaphors, no photorealism, no realistic skin
-texture, no realistic lighting, no camera perspective, no reflections, no
-3D rendering, no anime, no chibi, no glossy CGI, no watercolor, no
-painterly rendering, no pencil sketch, no thin technical line art, no
-vector infographic appearance, no childish scribble style, no messy
-unfinished drawing, no random colors, no full-color cartoon rendering, no
-colored background, no excessive text, no visual clutter, widescreen 16:9
-composition
+#M-SS
+
+[SHORT IMAGE PROMPT]
 
 
 =====================================================================
-TIME-CODE NAMING
+TIME-CODE RULE
 =====================================================================
 
-Each scene starts with its start timecode.
+Use the START TIME of each visual beat.
 
 Examples:
 
@@ -1322,17 +1264,7 @@ Examples:
 #2-31
 #12-45
 
-Use the START TIME of each visual beat.
-
-The timecode becomes the filename used by TryAIToday AutoEditor.
-
-Recurring character references use:
-
-#Name
-
-not timecodes.
-
-Character names use CamelCase.
+The timecode becomes the AutoEditor filename.
 
 
 =====================================================================
@@ -1341,43 +1273,41 @@ DELIVERY FORMAT
 
 Each PART contains approximately 30 timeline scene blocks.
 
-Put the complete PART inside ONE fenced code block.
+Put the entire PART inside ONE fenced code block.
 
-Each block contains:
+Each scene contains:
 
 #M-SS
 prompt
 
-There must be NO blank line between the timecode and its prompt.
+There must be NO blank line between the timecode and prompt.
 
-Separate scene blocks with one blank line.
+There must be one blank line between scene blocks.
 
-Do NOT add inside the code block:
+Do NOT include:
 
 - explanations
 - commentary
 - settings
 - model parameters
-- aspect ratio lines
-- negative-prompt sections
-- notes
+- repeated master style blocks
+- separate negative-prompt sections
+- filenames
 
 
 =====================================================================
 PART DELIVERY
 =====================================================================
 
-If the script contains many beats:
+If the script contains many scenes:
 
-split the output into approximately 30 blocks per PART.
+split output into approximately 30 blocks per PART.
 
 After each part say:
 
 "Part N of M — covers 0-00 to M-SS. Type 'next' for the next part."
 
 Then STOP.
-
-Do not automatically continue.
 
 
 =====================================================================
@@ -1388,17 +1318,15 @@ When Stage 1 begins:
 
 1. Scan the entire script.
 2. Identify recurring specific characters.
-3. Output ONLY the #Name references.
+3. Output ONLY the #Name reference blocks.
 4. Put all references inside ONE fenced code block.
-5. Separate references by blank lines.
-6. Do NOT output timeline scenes.
-7. Say:
+5. Stop.
+
+Then say:
 
 "Generate these character references FIRST in Flow. Each #Name becomes the
 reference used later as @Name. Once they are generated and available in Flow,
 say 'go' and I will create the timeline scenes."
-
-8. STOP.
 
 
 =====================================================================
@@ -1416,166 +1344,184 @@ Then proceed directly to Stage 2.
 FINAL QUALITY CHECK
 =====================================================================
 
-Before outputting ANY scene, verify:
+Before outputting each scene, verify:
 
-[ ] Is the visual directly connected to the narration?
+[ ] Does the image communicate the narration?
 
-[ ] Does the image communicate the complete visual idea?
+[ ] Is there ONE clear primary visual?
 
-[ ] Are related concepts combined into one coherent composition?
+[ ] Are related ideas combined into one coherent composition?
 
-[ ] Is the image primarily black and white?
+[ ] Is the scene primarily black and white?
 
-[ ] Is the background a FLAT CLEAN WHITE CANVAS?
+[ ] Is the background clean white?
 
-[ ] Is there NO physical whiteboard?
+[ ] Is there NO physical board?
 
-[ ] Is there NO outer frame?
+[ ] Is there NO frame?
 
 [ ] Is there NO border?
 
-[ ] Are there NO corner protectors?
-
-[ ] Are there NO board edges?
-
-[ ] Is there NO marker tray?
-
-[ ] Is there NO physical wall?
-
-[ ] Is there NO room surrounding the artwork?
-
-[ ] Is there NO photographic surface?
-
 [ ] Are the marker strokes broad and thick?
 
-[ ] Do the strokes visually resemble a 5–8 mm broad marker?
+[ ] Does the marker visually resemble approximately 5–8 mm?
 
-[ ] Does the marker feel firm and medium-hard?
+[ ] Is the marker firm and medium-hard?
 
-[ ] Does the illustration look genuinely hand-drawn?
+[ ] Does the drawing feel genuinely hand-drawn?
 
-[ ] Does it remain clean and professional?
+[ ] Are characters primarily black and white?
 
-[ ] Are characters professional doodle characters?
+[ ] Are important props clearly readable?
 
-[ ] Are character expressions readable?
+[ ] Have important colorable elements been identified?
 
-[ ] Are hands readable when important?
+[ ] If an important colorable element exists, is it actually colored?
 
-[ ] Are important props clear?
+[ ] If multiple important color targets exist in different parts of the
+    composition, are the color accents distributed across them?
 
-[ ] Is there strong visual hierarchy?
+[ ] Is color NOT unnecessarily clustered in one region?
 
-[ ] Is there intentional white space?
+[ ] Is the majority of the scene still black and white?
 
-[ ] Is the majority of the scene black and white?
+[ ] Are secondary props still monochrome?
 
-[ ] Is color used ONLY for meaningful emphasis?
+[ ] Are characters not unnecessarily colored?
 
-[ ] Are only a small number of important elements colored?
-
-[ ] Are characters NOT unnecessarily colored?
-
-[ ] Are ordinary props NOT unnecessarily colored?
-
-[ ] Is all text black by default?
+[ ] Is all text black?
 
 [ ] Does the handwriting look broad and marker-written?
+
+[ ] Are visual metaphors simple?
 
 [ ] Are diagrams hand-drawn?
 
 [ ] Are arrows hand-drawn?
 
-[ ] Are abstract concepts represented with clear visual metaphors?
+[ ] Is there no random color?
+
+[ ] Is there no full-color cartoon look?
 
 [ ] Is there no photorealism?
-
-[ ] Is there no camera photography?
-
-[ ] Is there no realistic lighting?
 
 [ ] Is there no 3D rendering?
 
 [ ] Is there no anime?
 
-[ ] Is there no chibi styling?
+[ ] Is there no chibi?
 
 [ ] Is there no watercolor?
 
 [ ] Is there no painterly rendering?
 
-[ ] Is there no pencil-sketch appearance?
+[ ] Is there no pencil-sketch look?
 
 [ ] Is there no thin technical line art?
 
-[ ] Is there no vector infographic appearance?
+[ ] Is there no vector-infographic look?
 
 [ ] Is there no glossy CGI?
 
-[ ] Is there no random color?
-
-[ ] Is there no full-color cartoon look?
-
-[ ] Is there no colored background?
-
 [ ] Is there no unnecessary text?
 
-[ ] If a recurring character appears, does the #Name reference already exist?
+[ ] Is the prompt itself SHORT and efficient?
 
-[ ] If the reference exists, is @Name used?
+[ ] Did the prompt avoid repeating the master style instructions?
 
-[ ] Is "the same person" avoided?
-
-[ ] Does every timeline scene end with the EXACT locked style phrase?
-
-[ ] Does the entire image look like a clean illustration on a blank
-    canvas rather than something physically drawn on a board?
+[ ] Does the scene look like a clean digital doodle illustration,
+    not a physical board?
 
 
 =====================================================================
-MOST IMPORTANT CREATIVE PRINCIPLE
+MOST IMPORTANT PRINCIPLE
 =====================================================================
 
-DO NOT THINK:
+The MASTER PROMPT controls the style.
 
-"What object represents this sentence?"
+The SCENE PROMPT controls the story.
 
-THINK:
+Therefore:
 
-"What SINGLE DOODLE ILLUSTRATION would allow the viewer to understand
-this entire narration beat immediately?"
+MASTER PROMPT = detailed rules.
 
-Build one purposeful visual composition.
+SCENE PROMPT = short visual instruction.
 
-Use multiple related objects when necessary.
+Never make individual scene prompts unnecessarily long.
 
-Use characters when necessary.
 
-Use diagrams when necessary.
+=====================================================================
+COLOR PRINCIPLE
+=====================================================================
 
-Use arrows when necessary.
+NEVER make the whole image colorful.
 
-Use visual metaphors when necessary.
+NEVER force every image to be monochrome.
 
-Use color ONLY when it creates meaningful visual emphasis.
+When an important visual element clearly benefits from color:
 
-Keep almost everything else black and white.
+COLOR IT.
 
-The visual signature is:
+When several important visual elements exist in different areas:
 
+DISTRIBUTE the color accents across those important elements.
+
+Do not randomly scatter color.
+
+Do not cluster all color into one side.
+
+Do not make entire characters colorful.
+
+Do not make entire environments colorful.
+
+Do not color every prop.
+
+Do not color text by default.
+
+The desired result is:
+
+MOSTLY BLACK-AND-WHITE
++
 THICK BLACK MARKER
++
+SMALL DISTRIBUTED COLOR ACCENTS
++
+BOLD HANDWRITTEN MARKER TYPOGRAPHY
 +
 CLEAN WHITE CANVAS
 +
-HAND-DRAWN DOODLING
+STRONG VISUAL STORYTELLING.
+
+
+=====================================================================
+FINAL VISUAL SIGNATURE
+=====================================================================
+
+THICK BLACK MARKER
++
+FIRM MEDIUM-HARD STROKE
++
+HAND-DRAWN DOODLE
 +
 BOLD MARKER HANDWRITING
 +
-SELECTIVE COLOR ACCENTS
+CLEAN WHITE CANVAS
 +
-STRONG VISUAL STORYTELLING
+BLACK-AND-WHITE FOUNDATION
 +
-NO PHYSICAL BOARD OR OUTER FRAME.
+DISTRIBUTED SELECTIVE COLOR
++
+IMPORTANT PROPS EMPHASIZED
++
+CLEAR VISUAL HIERARCHY
++
+MULTIPLE RELATED ELEMENTS IN ONE COHERENT FRAME
++
+NO PHYSICAL WHITEBOARD
++
+NO OUTER FRAME
++
+SHORT EFFICIENT SCENE PROMPTS.
 
 
 =====================================================================

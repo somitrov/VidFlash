@@ -866,26 +866,19 @@ function renderDoodleClip({
   const {
     tipXNorm,
     tipYNorm,
+    activeStrokeIndex,
+    activeSegmentIndex,
     completedStrokes,
     strokeProgress,
+    isPenDown,
   } = evaluateDoodlePositionAtProgress(vectorData, drawProgress);
 
   const baseTipX = imgX + tipXNorm * targetW;
   const baseTipY = imgY + tipYNorm * targetH;
 
-  // Realistic marker scribbling micro-jitter (applied only to the pen tip, not the camera)
-  const isActivelyDrawing = drawProgress < 1.0;
-  const jitterX = isActivelyDrawing
-    ? Math.sin(currentTimeSec * 45) * (canvasWidth * 0.0035) +
-      Math.cos(currentTimeSec * 29) * (canvasWidth * 0.002)
-    : 0;
-  const jitterY = isActivelyDrawing
-    ? Math.cos(currentTimeSec * 48) * (canvasHeight * 0.0035) +
-      Math.sin(currentTimeSec * 31) * (canvasHeight * 0.002)
-    : 0;
-
-  const markerTipX = Math.max(0, Math.min(canvasWidth, baseTipX + jitterX));
-  const markerTipY = Math.max(0, Math.min(canvasHeight, baseTipY + jitterY));
+  // Exact marker needle tip: locked to stroke line (zero artificial sinusoidal jitter)
+  const markerTipX = Math.max(0, Math.min(canvasWidth, baseTipX));
+  const markerTipY = Math.max(0, Math.min(canvasHeight, baseTipY));
 
   ctx.save();
 
@@ -957,7 +950,8 @@ function renderDoodleClip({
         offCtx.fillStyle = "#ffffff";
         offCtx.fillRect(0, 0, canvasWidth, canvasHeight);
       } else {
-        const strokeLineWidth = Math.max(16, targetW * 0.032);
+        // Clean stroke line width (14px to 26px) that cleanly covers marker lines without bleeding into adjacent letters
+        const strokeLineWidth = Math.max(14, Math.min(26, targetW * 0.015));
         offCtx.strokeStyle = "#ffffff";
         offCtx.fillStyle = "#ffffff";
         offCtx.lineWidth = strokeLineWidth;
@@ -966,7 +960,7 @@ function renderDoodleClip({
 
         const strokes = vectorData.strokes;
 
-        // Draw all completed strokes
+        // 1. Draw all completed strokes
         for (let s = 0; s < completedStrokes && s < strokes.length; s++) {
           const pts = strokes[s].points;
           if (pts.length >= 2) {
@@ -982,34 +976,40 @@ function renderDoodleClip({
           }
         }
 
-        // Draw active stroke up to current needle point
-        if (completedStrokes < strokes.length) {
-          const activePts = strokes[completedStrokes].points;
+        // 2. Draw active stroke up to current needle point (ONLY when pen is touching paper)
+        if (isPenDown && activeStrokeIndex < strokes.length) {
+          const activePts = strokes[activeStrokeIndex].points;
           if (activePts.length >= 2) {
             offCtx.beginPath();
             offCtx.moveTo(
               imgX + activePts[0].x * targetW,
               imgY + activePts[0].y * targetH
             );
-            const numPtsToDraw = Math.max(
-              1,
-              Math.floor(strokeProgress * (activePts.length - 1))
+            const limit = Math.min(
+              activeSegmentIndex ?? 0,
+              activePts.length - 1
             );
-            for (let p = 1; p <= numPtsToDraw; p++) {
+            for (let p = 1; p <= limit; p++) {
               offCtx.lineTo(
                 imgX + activePts[p].x * targetW,
                 imgY + activePts[p].y * targetH
               );
             }
-            offCtx.lineTo(baseTipX, baseTipY);
+            offCtx.lineTo(markerTipX, markerTipY);
             offCtx.stroke();
           }
-        }
 
-        // Scribble circle cap directly at marker tip
-        offCtx.beginPath();
-        offCtx.arc(markerTipX, markerTipY, strokeLineWidth * 1.25, 0, Math.PI * 2);
-        offCtx.fill();
+          // Small circular nib contact directly at the marker needle tip
+          offCtx.beginPath();
+          offCtx.arc(
+            markerTipX,
+            markerTipY,
+            strokeLineWidth * 0.5,
+            0,
+            Math.PI * 2
+          );
+          offCtx.fill();
+        }
       }
 
       // Composite sketch image through reveal mask
@@ -1059,9 +1059,9 @@ function renderDoodleClip({
       const handW = handImg.naturalWidth * handScale;
       const handH = handImg.naturalHeight * handScale;
 
-      // Calibrated EXPO Marker Tip Anchor for updated hand image (1024x1536 Portrait)
-      const TIP_X_RATIO = 0.0713;
-      const TIP_Y_RATIO = 0.1732;
+      // Sub-pixel calibrated EXPO Marker Tip Anchor for hand image (1024x1536 Portrait)
+      const TIP_X_RATIO = 73 / 1024;
+      const TIP_Y_RATIO = 268.5 / 1536;
 
       let handX = markerTipX - TIP_X_RATIO * handW;
       let handY = markerTipY - TIP_Y_RATIO * handH;
