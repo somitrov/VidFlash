@@ -27,6 +27,7 @@ import {
   FileText,
   Pencil,
   Download,
+  Mic,
 } from "lucide-react";
 import { DoodleMasterPromptModal } from "./DoodleMasterPromptModal";
 import {
@@ -39,6 +40,7 @@ import {
   StudioSettings,
   HardwareProfile,
   BgmTrackState,
+  AudioTrackState,
 } from "@/types/autoeditor";
 import { formatSecondsToTimecode } from "@/lib/engine/timestampParser";
 import { parseScriptOrSRTContent } from "./StudioSubtitlesPanel";

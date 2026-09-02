@@ -119,9 +119,19 @@ export async function exportVideoClientSide({
     audioSource = audioContext.createBufferSource();
     audioSource.buffer = audioTrack.audioBuffer;
     const voiceGain = audioContext.createGain();
-    voiceGain.gain.value = 1.0;
+    voiceGain.gain.value = audioTrack.volume !== undefined ? audioTrack.volume : 1.0;
+
+    // Studio Brickwall Limiter to guarantee zero clipping or distortion on vocal boost
+    const voiceLimiter = audioContext.createDynamicsCompressor();
+    voiceLimiter.threshold.value = -1.0;
+    voiceLimiter.knee.value = 10;
+    voiceLimiter.ratio.value = 20;
+    voiceLimiter.attack.value = 0.003;
+    voiceLimiter.release.value = 0.15;
+
     audioSource.connect(voiceGain);
-    voiceGain.connect(audioDest);
+    voiceGain.connect(voiceLimiter);
+    voiceLimiter.connect(audioDest);
   }
 
   // Scene Transition Sound Effects (SFX) Track Preload & Graph Construction

@@ -110,6 +110,7 @@ export interface AudioTrackState {
   audioBuffer: AudioBuffer | null;
   waveformPeaks: number[];
   audioUrl: string | null;
+  volume?: number; // 0.0 to 2.5 (1.0 = 100% normal, up to 250% vocal boost)
 }
 
 export interface BgmTrackState {

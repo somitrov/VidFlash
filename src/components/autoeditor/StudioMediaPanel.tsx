@@ -11,6 +11,7 @@ import {
   FolderOpen,
   CheckCircle2,
   Film,
+  Volume2,
 } from "lucide-react";
 import { AudioTrackState, TimelineClip } from "@/types/autoeditor";
 import { formatSecondsToTimecode } from "@/lib/engine/timestampParser";
@@ -24,6 +25,7 @@ interface StudioMediaPanelProps {
   onRemoveAudio: () => void;
   onRemoveClip: (id: string) => void;
   onClearAllClips: () => void;
+  onUpdateAudioTrack?: (updates: Partial<AudioTrackState>) => void;
 }
 
 export const StudioMediaPanel: React.FC<StudioMediaPanelProps> = ({
@@ -35,6 +37,7 @@ export const StudioMediaPanel: React.FC<StudioMediaPanelProps> = ({
   onRemoveAudio,
   onRemoveClip,
   onClearAllClips,
+  onUpdateAudioTrack,
 }) => {
   const audioInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
@@ -119,32 +122,82 @@ export const StudioMediaPanel: React.FC<StudioMediaPanelProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="p-2 rounded-lg bg-[#121215] border border-[#2b2b36] flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-2 overflow-hidden">
-                  <div className="w-7 h-7 rounded bg-teal-600/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
-                    <Music className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="overflow-hidden">
-                    <div className="text-[11px] font-bold text-slate-200 truncate">
-                      {audioTrack.fileName}
+              <div className="p-2.5 rounded-lg bg-[#121215] border border-[#2b2b36] text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2 overflow-hidden">
+                    <div className="w-7 h-7 rounded bg-teal-600/20 text-teal-400 flex items-center justify-center shrink-0 border border-teal-500/30">
+                      <Music className="w-3.5 h-3.5" />
                     </div>
-                    <div className="text-[9px] text-slate-500 font-mono">
-                      {formatSecondsToTimecode(audioTrack.durationSec)}
-                      {audioTrack.parts && audioTrack.parts.length > 1 && (
-                        <span className="text-teal-400 ml-1">
-                          ({audioTrack.parts.length} parts)
-                        </span>
-                      )}
+                    <div className="overflow-hidden">
+                      <div className="text-[11px] font-bold text-slate-200 truncate">
+                        {audioTrack.fileName}
+                      </div>
+                      <div className="text-[9px] text-slate-500 font-mono">
+                        {formatSecondsToTimecode(audioTrack.durationSec)}
+                        {audioTrack.parts && audioTrack.parts.length > 1 && (
+                          <span className="text-teal-400 ml-1">
+                            ({audioTrack.parts.length} parts)
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <button
+                    onClick={onRemoveAudio}
+                    className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                    title="Remove Audio"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  onClick={onRemoveAudio}
-                  className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                  title="Remove Audio"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+
+                {/* Quick Voiceover Volume & Vocal Boost Slider */}
+                {onUpdateAudioTrack && (
+                  <div className="pt-1.5 border-t border-[#23232b] flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-1 text-[10px] text-slate-400 shrink-0">
+                      <Volume2
+                        className={`w-3 h-3 ${
+                          (audioTrack.volume ?? 1.0) > 1.0
+                            ? "text-amber-400"
+                            : "text-teal-400"
+                        }`}
+                      />
+                      <span>Vol:</span>
+                      <span
+                        className={`font-mono font-bold ${
+                          (audioTrack.volume ?? 1.0) > 1.0
+                            ? "text-amber-300"
+                            : "text-teal-300"
+                        }`}
+                      >
+                        {Math.round((audioTrack.volume ?? 1.0) * 100)}%
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2.5"
+                      step="0.05"
+                      value={audioTrack.volume ?? 1.0}
+                      onInput={(e) =>
+                        onUpdateAudioTrack({
+                          volume: parseFloat(
+                            (e.target as HTMLInputElement).value
+                          ),
+                        })
+                      }
+                      onChange={(e) =>
+                        onUpdateAudioTrack({
+                          volume: parseFloat(e.target.value),
+                        })
+                      }
+                      className="flex-1 accent-teal-400 h-1.5 bg-[#1c1c24] rounded-lg cursor-pointer"
+                      title={`Voiceover Volume: ${Math.round(
+                        (audioTrack.volume ?? 1.0) * 100
+                      )}%`}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -207,6 +207,50 @@ export function VidFlashAutoEditor({
   const animationFrameRef = useRef<number | null>(null);
   const lastCrossedClipIndexRef = useRef<number>(-1);
 
+  // Web Audio Graph for Voiceover Gain Boost & Studio Brickwall Limiter
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const voiceGainNodeRef = useRef<GainNode | null>(null);
+  const mediaElementSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+
+  const ensureVoiceAudioGraph = useCallback(() => {
+    if (typeof window === "undefined" || !audioElementRef.current) return;
+    try {
+      if (!audioCtxRef.current) {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
+        if (!AudioCtx) return;
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+      if (!mediaElementSourceRef.current && audioElementRef.current) {
+        const source = ctx.createMediaElementSource(audioElementRef.current);
+        const gainNode = ctx.createGain();
+        gainNode.gain.value =
+          audioTrack?.volume !== undefined ? audioTrack.volume : 1.0;
+        voiceGainNodeRef.current = gainNode;
+
+        const limiter = ctx.createDynamicsCompressor();
+        limiter.threshold.value = -1.0;
+        limiter.knee.value = 10;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.15;
+
+        source.connect(gainNode);
+        gainNode.connect(limiter);
+        limiter.connect(ctx.destination);
+        mediaElementSourceRef.current = source;
+      }
+    } catch (e) {
+      console.warn("Notice: Voiceover WebAudio graph init:", e);
+    }
+  }, [audioTrack?.volume]);
+
   const totalDurationSec = audioTrack
     ? audioTrack.durationSec
     : timelineClips.length > 0
@@ -217,6 +261,7 @@ export function VidFlashAutoEditor({
   const handleUploadAudio = async (files: File[]) => {
     try {
       const decoded = await decodeAudioFiles(files);
+      decoded.volume = 1.0;
       setAudioTrack(decoded);
 
       if (files.length > 0) {
@@ -240,6 +285,18 @@ export function VidFlashAutoEditor({
       console.error("Failed to decode audio files:", err);
     }
   };
+
+  const handleUpdateAudioTrack = useCallback((updates: Partial<AudioTrackState>) => {
+    ensureVoiceAudioGraph();
+    setAudioTrack((prev) => {
+      if (!prev) return null;
+      const next = { ...prev, ...updates };
+      if (updates.volume !== undefined && voiceGainNodeRef.current) {
+        voiceGainNodeRef.current.gain.value = updates.volume;
+      }
+      return next;
+    });
+  }, [ensureVoiceAudioGraph]);
 
   const handleRemoveAudio = () => {
     if (audioTrack && audioTrack.audioUrl) {
@@ -407,6 +464,14 @@ export function VidFlashAutoEditor({
         if (bgmElementRef.current) bgmElementRef.current.currentTime = 0;
       }
       setIsPlaying(true);
+      ensureVoiceAudioGraph();
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        audioCtxRef.current.resume().catch(() => {});
+      }
+      if (voiceGainNodeRef.current) {
+        voiceGainNodeRef.current.gain.value =
+          audioTrack?.volume !== undefined ? audioTrack.volume : 1.0;
+      }
       if (audioElementRef.current && audioTrack?.audioUrl) {
         try {
           const playPromise = audioElementRef.current.play();
@@ -807,6 +872,7 @@ export function VidFlashAutoEditor({
             onRemoveAudio={handleRemoveAudio}
             onRemoveClip={handleRemoveClip}
             onClearAllClips={handleClearAllClips}
+            onUpdateAudioTrack={handleUpdateAudioTrack}
           />
         </div>
 
