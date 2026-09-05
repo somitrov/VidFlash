@@ -168,7 +168,8 @@ export function renderCompositorFrame({
         enableDoodle,
         doodlePaperStyle,
         doodleDrawDurationRatio,
-        enableDoodleZoom
+        enableDoodleZoom,
+        enableBlackAndWhite
       );
       ctx.restore();
     } else if (enableDoodle) {
@@ -183,6 +184,7 @@ export function renderCompositorFrame({
         paperStyle: doodlePaperStyle,
         enableDoodleZoom,
         currentTimeSec,
+        enableBlackAndWhite,
       });
     } else {
       // Normal single clip rendering with Ken Burns
@@ -215,6 +217,7 @@ export function renderCompositorFrame({
         paperStyle: doodlePaperStyle,
         enableDoodleZoom,
         currentTimeSec,
+        enableBlackAndWhite,
       });
     } else {
       ctx.save();
@@ -327,7 +330,8 @@ function renderTransitionComposite(
   enableDoodle: boolean = false,
   doodlePaperStyle: "auto" | "whiteboard" | "paper" | "chalkboard" = "auto",
   doodleDrawDurationRatio: number = 0.75,
-  enableDoodleZoom: boolean = false
+  enableDoodleZoom: boolean = false,
+  enableBlackAndWhite: boolean = false
 ) {
   const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
@@ -351,6 +355,7 @@ function renderTransitionComposite(
         enableDoodleZoom: false,
         currentTimeSec,
         renderHand: false,
+        enableBlackAndWhite,
       });
     } else {
       renderSingleClip(
@@ -776,14 +781,26 @@ function renderPaperBackground(
     // "auto" or "whiteboard": Pure flat canvas background matching
     const isAuto = style === "auto";
     const hasImageBg = detectedBg && !detectedBg.isTransparent;
-    const bgColorHex =
-      isAuto && hasImageBg
-        ? detectedBg.hex
-        : style === "whiteboard"
-        ? "#EAEAEA"
-        : hasImageBg
-        ? detectedBg.hex
-        : "#EAEAEA";
+    let bgColorHex = "#FFFFFF";
+
+    if (style === "whiteboard") {
+      bgColorHex = "#FFFFFF";
+    } else if (isAuto && hasImageBg) {
+      if (detectedBg.isDark) {
+        bgColorHex = detectedBg.hex;
+      } else if (
+        detectedBg.r >= 235 &&
+        detectedBg.g >= 235 &&
+        detectedBg.b >= 235
+      ) {
+        // High-purity white canvas for whiteboard doodles
+        bgColorHex = "#FFFFFF";
+      } else {
+        bgColorHex = detectedBg.hex;
+      }
+    } else if (hasImageBg) {
+      bgColorHex = detectedBg.hex;
+    }
 
     ctx.fillStyle = bgColorHex;
     ctx.fillRect(fillX, fillY, fillW, fillH);
@@ -805,6 +822,7 @@ function renderDoodleClip({
   enableDoodleZoom = false,
   currentTimeSec = 0,
   renderHand = true,
+  enableBlackAndWhite = false,
 }: {
   ctx: CanvasRenderingContext2D;
   clip: TimelineClip;
@@ -816,6 +834,7 @@ function renderDoodleClip({
   enableDoodleZoom?: boolean;
   currentTimeSec: number;
   renderHand?: boolean;
+  enableBlackAndWhite?: boolean;
 }) {
   const mediaSource =
     clip.fileType === "video" ? clip.videoElement : clip.imageElement;
@@ -842,19 +861,28 @@ function renderDoodleClip({
   const imgY = (canvasHeight - targetH) / 2;
 
   // Dynamically compute optimal drawing speed from clip duration:
-  // Short clips (e.g. 2-5s) draw fast; long clips (10s - 60s+) always complete drawing in max 10-12s
+  // - Drawing duration is extended up to 30.0 seconds maximum.
+  // - For long clips (>30s up to 60s+), hand drawing runs for 30s, then the hand slides away cleanly,
+  //   leaving the completed still image visible with voiceover for the remainder of the clip.
+  // - For clips <= 30s (e.g. 5s - 25s), allocate up to ~88% of clip duration (leaving comfortable time
+  //   to view the completed artwork without rushing).
   const clipDur = Math.max(0.5, clip.durationSec || 5);
-  const maxDrawDurationSec = Math.min(11.0, clipDur * 0.82);
-  const effectiveDrawRatio =
+  const targetDrawSec = Math.min(30.0, Math.max(3.0, clipDur * 0.88));
+  const defaultDrawRatio = targetDrawSec / clipDur;
+
+  let effectiveDrawRatio = defaultDrawRatio;
+  if (
     drawDurationRatio !== undefined &&
     drawDurationRatio > 0.3 &&
     drawDurationRatio !== 0.75
-      ? drawDurationRatio
-      : maxDrawDurationSec / clipDur;
+  ) {
+    // If a custom ratio is configured, still respect the 30.0s hard ceiling
+    effectiveDrawRatio = Math.min(30.0 / clipDur, drawDurationRatio);
+  }
+
   const safeDrawRatio = Math.max(0.05, Math.min(0.95, effectiveDrawRatio));
 
-  // Organic artist acceleration curve: starts at a deliberate, human speed
-  // and smoothly accelerates through intricate details to finish 100% of the sketch
+  // Default organic drawing acceleration curve
   const rawT = Math.max(0, Math.min(1, clipProgress / safeDrawRatio));
   const drawProgress = Math.max(
     0,
@@ -1020,31 +1048,46 @@ function renderDoodleClip({
 
       if (isDarkChalkboard) {
         if (vectorData.detectedBgColor.isDark) {
-          // Source image already has dark/black background: enhance contrast to pure AMOLED black & crisp white
-          offCtx.filter = "grayscale(100%) contrast(200%) brightness(115%)";
+          // Source image already has dark/black background: enhance contrast if B&W effect requested
+          offCtx.filter = enableBlackAndWhite
+            ? "grayscale(100%) contrast(200%) brightness(115%)"
+            : "none";
           offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
           offCtx.restore();
           ctx.drawImage(offscreen, 0, 0);
         } else {
-          // Source image has light/white background: invert to dark chalkboard with chalk white strokes
-          offCtx.filter =
-            "grayscale(100%) invert(100%) contrast(180%) brightness(120%)";
+          // Source image has light/white background: invert to dark chalkboard with chalk strokes
+          offCtx.filter = enableBlackAndWhite
+            ? "grayscale(100%) invert(100%) contrast(180%) brightness(120%)"
+            : "invert(100%)";
           offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
           offCtx.restore();
           ctx.drawImage(offscreen, 0, 0);
         }
       } else {
-        // High-contrast ink extraction + Multiply compositing:
-        // Pushes any white/light paper background to pure white #FFFFFF
-        // and sharpens marker ink to pure #000000
-        offCtx.filter = "grayscale(100%) contrast(220%) brightness(105%)";
+        // Doodle Whiteboard / Paper Compositing:
+        // Keep selective colors on highlighted characters & props 100% intact (never force grayscale unless B&W effect is explicitly enabled)
+        offCtx.filter = enableBlackAndWhite
+          ? "grayscale(100%) contrast(220%) brightness(105%)"
+          : "none";
         offCtx.drawImage(mediaSource, imgX, imgY, targetW, targetH);
         offCtx.restore();
 
-        // In multiply blend mode, pure white (#FFFFFF) becomes 100% transparent on #EAEAEA,
-        // drawing ONLY the black marker lines directly onto the #EAEAEA canvas!
+        const isLightPaper =
+          !vectorData.detectedBgColor.isDark &&
+          (vectorData.detectedBgColor.isTransparent ||
+            (vectorData.detectedBgColor.r > 200 &&
+              vectorData.detectedBgColor.g > 200 &&
+              vectorData.detectedBgColor.b > 200));
+
         ctx.save();
-        ctx.globalCompositeOperation = "multiply";
+        if (paperStyle === "paper" || isLightPaper) {
+          // Whiteboard & Light Paper: multiply ensures 100% seamless canvas background blending
+          // both during active drawing and after drawing completes (completely eliminates rectangular edge box seams)
+          ctx.globalCompositeOperation = "multiply";
+        } else {
+          ctx.globalCompositeOperation = "source-over";
+        }
         ctx.drawImage(offscreen, 0, 0);
         ctx.restore();
       }

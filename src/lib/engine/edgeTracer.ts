@@ -49,6 +49,8 @@ export interface DoodleVectorData {
   endCentroidYNorm?: number;
 }
 
+const DOODLE_ENGINE_VERSION = 7;
+
 const vectorCache = new WeakMap<
   HTMLImageElement | HTMLVideoElement,
   DoodleVectorData
@@ -60,10 +62,14 @@ const vectorCache = new WeakMap<
 export function getOrExtractDoodleVectorData(
   mediaSource: HTMLImageElement | HTMLVideoElement
 ): DoodleVectorData {
-  const cached = vectorCache.get(mediaSource);
-  if (cached) return cached;
+  const sourceWithVer = mediaSource as any;
+  if (sourceWithVer.__doodleEngineVer === DOODLE_ENGINE_VERSION) {
+    const cached = vectorCache.get(mediaSource);
+    if (cached) return cached;
+  }
 
   const vectorData = extractStrokesFromSource(mediaSource);
+  sourceWithVer.__doodleEngineVer = DOODLE_ENGINE_VERSION;
   vectorCache.set(mediaSource, vectorData);
   return vectorData;
 }
@@ -164,13 +170,26 @@ function extractStrokesFromSource(
     }
   }
 
-  if (rawStrokes.length === 0) {
+  // 4. Extract dense-color painting/sketching strokes (VideoScribe / Doodly style for colored props like red car)
+  const denseColorStrokes = extractDenseColorPaintingStrokes(
+    data,
+    w,
+    h,
+    detectedBgColor
+  );
+
+  if (rawStrokes.length === 0 && denseColorStrokes.length === 0) {
     return createFallbackVectorData(detectedBgColor);
   }
 
-  // 4. Object-Complete Spatial Clustering & Sequential Ordering
-  const { finalStrokes, actions, totalLength, strokeStartDistances, actionStartDistances } =
-    clusterAndSequenceStrokes(rawStrokes);
+  // 5. Strict Text Completion & Stroke Sequencing with Default Speed
+  const {
+    finalStrokes,
+    actions,
+    totalLength,
+    strokeStartDistances,
+    actionStartDistances,
+  } = sequenceDoodleStrokes(rawStrokes, denseColorStrokes);
 
   if (finalStrokes.length === 0) {
     return createFallbackVectorData(detectedBgColor);
@@ -348,7 +367,7 @@ function traceContourLine(
 }
 
 /**
- * Disjoint Set (Union-Find) for spatial clustering
+ * Disjoint Set (Union-Find) for spatial clustering of text lines and words
  */
 class UnionFind {
   parent: Int32Array;
@@ -381,8 +400,166 @@ class UnionFind {
   }
 }
 
-interface StrokeCandidate {
-  rawIndex: number;
+interface ColorPatch {
+  cells: Array<{ cx: number; cy: number }>;
+  minCx: number;
+  maxCx: number;
+  minCy: number;
+  maxCy: number;
+}
+
+/**
+ * Detects regions with dense/saturated color fills (e.g. solid red car, colorful props/items)
+ * and synthesizes back-and-forth zigzag / diagonal hatching painting strokes.
+ * In VideoScribe / Doodly whiteboard style, the marker hand sweeps over the colored item
+ * and reveals the rich color as if painting/sketching it in!
+ */
+function extractDenseColorPaintingStrokes(
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+  detectedBgColor: DetectedBgColor
+): DoodlePoint[][] {
+  const cellSize = 8;
+  const gridW = Math.ceil(w / cellSize);
+  const gridH = Math.ceil(h / cellSize);
+  const colorGrid = new Uint8Array(gridW * gridH);
+  const cellColorCounts = new Uint16Array(gridW * gridH);
+
+  // 1. Mark dense colored pixels into coarse grid cells
+  for (let y = 1; y < h - 1; y += 2) {
+    const rowOffset = y * w;
+    const cy = Math.floor(y / cellSize);
+    for (let x = 1; x < w - 1; x += 2) {
+      const idx = (rowOffset + x) * 4;
+      const alpha = data[idx + 3];
+      if (alpha < 40) continue;
+
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+
+      const maxC = Math.max(r, g, b);
+      const minC = Math.min(r, g, b);
+      const chroma = maxC - minC;
+      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+      // Distance from detected background color
+      const bgDist =
+        Math.abs(r - detectedBgColor.r) +
+        Math.abs(g - detectedBgColor.g) +
+        Math.abs(b - detectedBgColor.b);
+
+      // Dense color test: saturated color prop/item (e.g. red car, colorful prop)
+      // Excludes pure black line-art (lum < 0.12) and paper background (bgDist < 45 or lum > 0.90)
+      if (chroma >= 32 && lum >= 0.12 && lum <= 0.88 && bgDist >= 45) {
+        const cx = Math.floor(x / cellSize);
+        cellColorCounts[cy * gridW + cx]++;
+      }
+    }
+  }
+
+  // A cell is colored if it has sufficient dense-color samples
+  for (let i = 0; i < gridW * gridH; i++) {
+    if (cellColorCounts[i] >= 3) {
+      colorGrid[i] = 1;
+    }
+  }
+
+  // 2. Connected-component flood fill to find distinct color props/patches
+  const visited = new Uint8Array(gridW * gridH);
+  const patches: ColorPatch[] = [];
+
+  for (let cy = 0; cy < gridH; cy++) {
+    for (let cx = 0; cx < gridW; cx++) {
+      const idx = cy * gridW + cx;
+      if (colorGrid[idx] === 1 && visited[idx] === 0) {
+        const queue: Array<[number, number]> = [[cx, cy]];
+        visited[idx] = 1;
+        const cells: Array<{ cx: number; cy: number }> = [];
+        let minCx = cx, maxCx = cx, minCy = cy, maxCy = cy;
+
+        while (queue.length > 0) {
+          const [currX, currY] = queue.pop()!;
+          cells.push({ cx: currX, cy: currY });
+          if (currX < minCx) minCx = currX;
+          if (currX > maxCx) maxCx = currX;
+          if (currY < minCy) minCy = currY;
+          if (currY > maxCy) maxCy = currY;
+
+          const neighbors = [
+            [currX + 1, currY],
+            [currX - 1, currY],
+            [currX, currY + 1],
+            [currX, currY - 1],
+          ];
+
+          for (const [nx, ny] of neighbors) {
+            if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH) {
+              const nIdx = ny * gridW + nx;
+              if (colorGrid[nIdx] === 1 && visited[nIdx] === 0) {
+                visited[nIdx] = 1;
+                queue.push([nx, ny]);
+              }
+            }
+          }
+        }
+
+        // Keep significant colored items/props (at least 5 coarse cells ~ 300+ pixels)
+        if (cells.length >= 5) {
+          patches.push({ cells, minCx, maxCx, minCy, maxCy });
+        }
+      }
+    }
+  }
+
+  // 3. For each patch, synthesize back-and-forth zigzag / diagonal hatching painting strokes
+  const paintingStrokes: DoodlePoint[][] = [];
+
+  for (const patch of patches) {
+    const rowMap = new Map<number, { minX: number; maxX: number }>();
+    for (const cell of patch.cells) {
+      const existing = rowMap.get(cell.cy);
+      if (!existing) {
+        rowMap.set(cell.cy, { minX: cell.cx, maxX: cell.cx });
+      } else {
+        if (cell.cx < existing.minX) existing.minX = cell.cx;
+        if (cell.cx > existing.maxX) existing.maxX = cell.cx;
+      }
+    }
+
+    const strokePoints: DoodlePoint[] = [];
+    let ltr = true;
+
+    // Scan through rows with step = 1 cell (8px step ensures 18-24px marker stroke fully overlaps)
+    for (let r = patch.minCy; r <= patch.maxCy; r++) {
+      const rowInfo = rowMap.get(r);
+      if (!rowInfo) continue;
+
+      const yNorm = Math.max(0.01, Math.min(0.99, (r * cellSize + cellSize / 2) / h));
+      const leftXNorm = Math.max(0.01, Math.min(0.99, (rowInfo.minX * cellSize) / w));
+      const rightXNorm = Math.max(0.01, Math.min(0.99, ((rowInfo.maxX + 1) * cellSize) / w));
+
+      if (ltr) {
+        strokePoints.push({ x: leftXNorm, y: yNorm });
+        strokePoints.push({ x: rightXNorm, y: yNorm });
+      } else {
+        strokePoints.push({ x: rightXNorm, y: yNorm });
+        strokePoints.push({ x: leftXNorm, y: yNorm });
+      }
+      ltr = !ltr;
+    }
+
+    if (strokePoints.length >= 2) {
+      paintingStrokes.push(strokePoints);
+    }
+  }
+
+  return paintingStrokes;
+}
+
+interface StrokeItem {
+  id: number;
   points: DoodlePoint[];
   length: number;
   minX: number;
@@ -391,44 +568,50 @@ interface StrokeCandidate {
   maxY: number;
   centerX: number;
   centerY: number;
+  isSpanningLine: boolean;
+  isDenseColor: boolean;
 }
 
-interface StrokeCluster {
+interface VisualEntity {
   id: number;
-  candidates: StrokeCandidate[];
+  strokes: StrokeItem[];
   minX: number;
   maxX: number;
   minY: number;
   maxY: number;
   centerX: number;
   centerY: number;
+  totalLength: number;
 }
 
 /**
- * Groups strokes into semantic visual objects (props, characters, words)
- * and enforces that each object is 100% completed before moving on to the next.
- * Also builds smooth pen-up transit actions between strokes.
+ * Sequences strokes with strict localized visual entity cohesion:
+ * 1. Each character, prop, or item is clustered into a bounded visual entity.
+ * 2. Scene-spanning lines (e.g. broad table surface line, floor line) are separated so they never bridge characters together.
+ * 3. Dense color painting strokes (e.g. green jacket, credit card colors) are merged directly into the entity occupying that region.
+ * 4. Invariant: While drawing entity K, ALL of its strokes (contours, details, colors) are completed 100%
+ *    before moving to entity K + 1. The hand draws step-by-step gracefully, completely eliminating random jumping!
  */
-function clusterAndSequenceStrokes(rawStrokes: DoodlePoint[][]): {
+function sequenceDoodleStrokes(
+  rawStrokes: DoodlePoint[][],
+  denseColorStrokes: DoodlePoint[][] = []
+): {
   finalStrokes: DoodleStroke[];
   actions: DoodleAction[];
   totalLength: number;
   strokeStartDistances: number[];
   actionStartDistances: number[];
 } {
-  // 1. Simplify points and compute lengths & bounding boxes
-  const candidates: StrokeCandidate[] = [];
+  const strokeItems: StrokeItem[] = [];
+  let itemCounter = 0;
 
+  // 1. Process raw edge contour strokes
   for (let i = 0; i < rawStrokes.length; i++) {
-    // Fine tolerance (0.002) preserves sharp corners and round letterforms
     const simplified = simplifyPoints(rawStrokes[i], 0.002);
     if (simplified.length < 2) continue;
 
     let len = 0;
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
 
     for (let p = 0; p < simplified.length; p++) {
       const pt = simplified[p];
@@ -436,30 +619,74 @@ function clusterAndSequenceStrokes(rawStrokes: DoodlePoint[][]): {
       if (pt.x > maxX) maxX = pt.x;
       if (pt.y < minY) minY = pt.y;
       if (pt.y > maxY) maxY = pt.y;
-
       if (p < simplified.length - 1) {
-        const next = simplified[p + 1];
-        len += Math.hypot(next.x - pt.x, next.y - pt.y);
+        len += Math.hypot(simplified[p + 1].x - pt.x, simplified[p + 1].y - pt.y);
       }
     }
 
-    // Filter tiny pixel noise
-    if (len >= 0.006) {
-      candidates.push({
-        rawIndex: i,
-        points: simplified,
-        length: len,
-        minX,
-        maxX,
-        minY,
-        maxY,
-        centerX: (minX + maxX) / 2,
-        centerY: (minY + maxY) / 2,
-      });
-    }
+    if (len < 0.003) continue; // Filter tiny single-pixel noise
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+
+    // Environmental spanning lines (e.g. broad horizontal table edge or tall room divider)
+    // These must NOT bridge separate characters together into a single giant cluster
+    const isSpanningLine =
+      (width > 0.35 && height < 0.12) ||
+      (height > 0.45 && width < 0.08);
+
+    strokeItems.push({
+      id: itemCounter++,
+      points: simplified,
+      length: len,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2,
+      isSpanningLine,
+      isDenseColor: false,
+    });
   }
 
-  if (candidates.length === 0) {
+  // 2. Process dense color painting strokes (VideoScribe / Doodly marker painting style)
+  for (let i = 0; i < denseColorStrokes.length; i++) {
+    const simplified = simplifyPoints(denseColorStrokes[i], 0.003);
+    if (simplified.length < 2) continue;
+
+    let len = 0;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+    for (let p = 0; p < simplified.length; p++) {
+      const pt = simplified[p];
+      if (pt.x < minX) minX = pt.x;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.y > maxY) maxY = pt.y;
+      if (p < simplified.length - 1) {
+        len += Math.hypot(simplified[p + 1].x - pt.x, simplified[p + 1].y - pt.y);
+      }
+    }
+
+    if (len < 0.015) continue;
+
+    strokeItems.push({
+      id: itemCounter++,
+      points: simplified,
+      length: len,
+      minX,
+      maxX,
+      minY,
+      maxY,
+      centerX: (minX + maxX) / 2,
+      centerY: (minY + maxY) / 2,
+      isSpanningLine: false,
+      isDenseColor: true,
+    });
+  }
+
+  if (strokeItems.length === 0) {
     return {
       finalStrokes: [],
       actions: [],
@@ -469,149 +696,279 @@ function clusterAndSequenceStrokes(rawStrokes: DoodlePoint[][]): {
     };
   }
 
-  // 2. Spatial Clustering using Disjoint Set (Union-Find)
-  const uf = new UnionFind(candidates.length);
-  // Spatial margins for word/prop clustering (horizontal bias for text kerning)
-  const marginX = 0.040;
-  const marginY = 0.030;
+  // Separate spanning environment lines (table lines, horizon) from foreground entities
+  const foregroundItems: StrokeItem[] = [];
+  const spanningItems: StrokeItem[] = [];
 
-  for (let i = 0; i < candidates.length; i++) {
-    const a = candidates[i];
-    for (let j = i + 1; j < candidates.length; j++) {
-      const b = candidates[j];
-      const overlapX =
-        a.minX - marginX <= b.maxX + marginX &&
-        a.maxX + marginX >= b.minX - marginX;
-      const overlapY =
-        a.minY - marginY <= b.maxY + marginY &&
-        a.maxY + marginY >= b.minY - marginY;
+  for (const item of strokeItems) {
+    if (item.isSpanningLine) {
+      spanningItems.push(item);
+    } else {
+      foregroundItems.push(item);
+    }
+  }
 
-      if (overlapX && overlapY) {
-        uf.union(i, j);
+  // 3. Spatial clustering of foreground items using Union-Find
+  const uf = new UnionFind(foregroundItems.length);
+
+  interface ClusterBox {
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
+    count: number;
+    totalLen: number;
+  }
+
+  const clusterBoxes: ClusterBox[] = foregroundItems.map((s) => ({
+    minX: s.minX,
+    maxX: s.maxX,
+    minY: s.minY,
+    maxY: s.maxY,
+    count: 1,
+    totalLen: s.length,
+  }));
+
+  for (let i = 0; i < foregroundItems.length; i++) {
+    const a = foregroundItems[i];
+    for (let j = i + 1; j < foregroundItems.length; j++) {
+      const b = foregroundItems[j];
+
+      // Fast bounding box gap test
+      const gapX = Math.max(0, Math.max(a.minX - b.maxX, b.minX - a.maxX));
+      const gapY = Math.max(0, Math.max(a.minY - b.maxY, b.minY - a.maxY));
+      if (gapX > 0.035 || gapY > 0.035) continue;
+
+      let isClose = false;
+      if (a.isDenseColor || b.isDenseColor) {
+        // Dense color stroke merges directly with contour strokes in the same area
+        if (gapX <= 0.020 && gapY <= 0.020) {
+          isClose = true;
+        }
+      } else {
+        // Point sampling test
+        const stepA = Math.max(1, Math.floor(a.points.length / 5));
+        const stepB = Math.max(1, Math.floor(b.points.length / 5));
+        for (let pa = 0; pa < a.points.length; pa += stepA) {
+          for (let pb = 0; pb < b.points.length; pb += stepB) {
+            const d = Math.hypot(
+              a.points[pa].x - b.points[pb].x,
+              a.points[pa].y - b.points[pb].y
+            );
+            if (d <= 0.022) {
+              isClose = true;
+              break;
+            }
+          }
+          if (isClose) break;
+        }
+      }
+
+      if (isClose) {
+        const rootI = uf.find(i);
+        const rootJ = uf.find(j);
+        if (rootI !== rootJ) {
+          const boxI = clusterBoxes[rootI];
+          const boxJ = clusterBoxes[rootJ];
+          const combinedWidth = Math.max(boxI.maxX, boxJ.maxX) - Math.min(boxI.minX, boxJ.minX);
+
+          // Entity Boundary Guard:
+          // If merging these two clusters would create an entity wider than 0.32 of screen,
+          // AND both clusters are already substantial visual objects, keep them as separate entities!
+          if (
+            combinedWidth > 0.32 &&
+            (boxI.count >= 4 || boxI.totalLen > 0.15) &&
+            (boxJ.count >= 4 || boxJ.totalLen > 0.15)
+          ) {
+            continue;
+          }
+
+          uf.union(i, j);
+          const newRoot = uf.find(i);
+          clusterBoxes[newRoot] = {
+            minX: Math.min(boxI.minX, boxJ.minX),
+            maxX: Math.max(boxI.maxX, boxJ.maxX),
+            minY: Math.min(boxI.minY, boxJ.minY),
+            maxY: Math.max(boxI.maxY, boxJ.maxY),
+            count: boxI.count + boxJ.count,
+            totalLen: boxI.totalLen + boxJ.totalLen,
+          };
+        }
       }
     }
   }
 
-  // 3. Assemble clusters
-  const clusterMap = new Map<number, StrokeCandidate[]>();
-  for (let i = 0; i < candidates.length; i++) {
+  // 4. Assemble Visual Entities
+  const entityMap = new Map<number, StrokeItem[]>();
+  for (let i = 0; i < foregroundItems.length; i++) {
     const root = uf.find(i);
-    if (!clusterMap.has(root)) clusterMap.set(root, []);
-    clusterMap.get(root)!.push(candidates[i]);
+    if (!entityMap.has(root)) entityMap.set(root, []);
+    entityMap.get(root)!.push(foregroundItems[i]);
   }
 
-  const clusters: StrokeCluster[] = [];
-  for (const [id, members] of clusterMap.entries()) {
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
+  const visualEntities: VisualEntity[] = [];
+  let entId = 0;
 
+  for (const members of entityMap.values()) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let totalLen = 0;
     for (const m of members) {
       if (m.minX < minX) minX = m.minX;
       if (m.maxX > maxX) maxX = m.maxX;
       if (m.minY < minY) minY = m.minY;
       if (m.maxY > maxY) maxY = m.maxY;
+      totalLen += m.length;
     }
-
-    clusters.push({
-      id,
-      candidates: members,
+    visualEntities.push({
+      id: entId++,
+      strokes: members,
       minX,
       maxX,
       minY,
       maxY,
       centerX: (minX + maxX) / 2,
       centerY: (minY + maxY) / 2,
+      totalLength: totalLen,
     });
   }
 
-  // 4. Sort Clusters in natural human reading/presentation order:
-  // Top-to-bottom, left-to-right (headers/titles first, then secondary props/diagrams)
-  clusters.sort((c1, c2) => {
-    // If vertical difference between clusters exceeds row band (~12% canvas height)
-    if (Math.abs(c1.minY - c2.minY) > 0.12) {
-      return c1.minY - c2.minY;
-    }
-    // Otherwise on the same line/band: order left-to-right
-    return c1.minX - c2.minX;
-  });
+  // 5. Sequence entities across the canvas (Left-to-Right / Top-to-Bottom)
+  visualEntities.sort((a, b) => a.minX + a.minY * 0.4 - (b.minX + b.minY * 0.4));
 
-  // 5. Sequence Strokes WITHIN each Cluster
-  // Every stroke in cluster K is 100% completed before moving to cluster K + 1!
+  const orderedEntities: VisualEntity[] = [];
+  let currentEntityPos = { x: 0.15, y: 0.20 };
+  const remainingEntities = [...visualEntities];
+
+  while (remainingEntities.length > 0) {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+
+    for (let i = 0; i < remainingEntities.length; i++) {
+      const ent = remainingEntities[i];
+      const dx = ent.centerX - currentEntityPos.x;
+      const dy = ent.centerY - currentEntityPos.y;
+      const xPenalty = dx < -0.05 ? 1.6 : 1.0;
+      const dist = Math.hypot(dx * xPenalty, dy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    }
+
+    const nextEntity = remainingEntities.splice(bestIdx, 1)[0];
+    orderedEntities.push(nextEntity);
+    currentEntityPos = { x: nextEntity.centerX, y: nextEntity.centerY };
+  }
+
+  // 6. Sequence strokes WITHIN each entity:
+  // INVARIANT: Every single stroke of entity K (contours, details, dense color fills)
+  // is completed 100% before any stroke of entity K + 1 begins!
   const finalStrokes: DoodleStroke[] = [];
+  let clusterIdx = 0;
 
-  for (let cIdx = 0; cIdx < clusters.length; cIdx++) {
-    const cluster = clusters[cIdx];
-    const remaining = [...cluster.candidates];
+  for (const entity of orderedEntities) {
+    const contours = entity.strokes.filter((s) => !s.isDenseColor);
+    const colorStrokes = entity.strokes.filter((s) => s.isDenseColor);
 
-    // Start with top-left stroke of the cluster
-    remaining.sort(
-      (a, b) => a.minY + a.minX * 0.4 - (b.minY + b.minX * 0.4)
-    );
-    let current = remaining.shift()!;
+    if (contours.length > 0) {
+      // Start at top-left of this entity
+      contours.sort((a, b) => a.minY + a.minX * 0.3 - (b.minY + b.minX * 0.3));
+      let current = contours.shift()!;
 
-    // Ensure initial stroke starts from top/left
-    const pStart = current.points[0];
-    const pEnd = current.points[current.points.length - 1];
-    if (pStart.y > pEnd.y + 0.01 || (Math.abs(pStart.y - pEnd.y) <= 0.01 && pStart.x > pEnd.x)) {
-      current.points = current.points.reverse();
-    }
-
-    finalStrokes.push({
-      points: current.points,
-      length: current.length,
-      clusterIndex: cIdx,
-    });
-
-    // Nearest Neighbor confined STRICTLY to this cluster
-    while (remaining.length > 0) {
-      const lastPt = current.points[current.points.length - 1];
-      let bestIdx = 0;
-      let bestDist = Infinity;
-      let shouldReverse = false;
-
-      for (let i = 0; i < remaining.length; i++) {
-        const s = remaining[i];
-        const sStart = s.points[0];
-        const sEnd = s.points[s.points.length - 1];
-
-        const dStart =
-          (sStart.x - lastPt.x) ** 2 + (sStart.y - lastPt.y) ** 2;
-        const dEnd = (sEnd.x - lastPt.x) ** 2 + (sEnd.y - lastPt.y) ** 2;
-
-        if (dStart < bestDist) {
-          bestDist = dStart;
-          bestIdx = i;
-          shouldReverse = false;
-        }
-        if (dEnd < bestDist) {
-          bestDist = dEnd;
-          bestIdx = i;
-          shouldReverse = true;
-        }
+      const pStart = current.points[0];
+      const pEnd = current.points[current.points.length - 1];
+      if (
+        pStart.y > pEnd.y + 0.01 ||
+        (Math.abs(pStart.y - pEnd.y) <= 0.01 && pStart.x > pEnd.x)
+      ) {
+        current.points = current.points.slice().reverse();
       }
-
-      const nextCandidate = remaining.splice(bestIdx, 1)[0];
-      let pts = nextCandidate.points;
-      if (shouldReverse) {
-        pts = pts.slice().reverse();
-      }
-
-      current = {
-        ...nextCandidate,
-        points: pts,
-      };
 
       finalStrokes.push({
-        points: pts,
-        length: nextCandidate.length,
-        clusterIndex: cIdx,
+        points: current.points,
+        length: current.length,
+        clusterIndex: clusterIdx,
+      });
+
+      // Nearest Neighbor strictly within this entity
+      while (contours.length > 0) {
+        const lastPt = current.points[current.points.length - 1];
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        let shouldReverse = false;
+
+        for (let i = 0; i < contours.length; i++) {
+          const s = contours[i];
+          const sStart = s.points[0];
+          const sEnd = s.points[s.points.length - 1];
+
+          const dStart =
+            (sStart.x - lastPt.x) ** 2 + (sStart.y - lastPt.y) ** 2;
+          const dEnd =
+            (sEnd.x - lastPt.x) ** 2 + (sEnd.y - lastPt.y) ** 2;
+
+          if (dStart < bestDist) {
+            bestDist = dStart;
+            bestIdx = i;
+            shouldReverse = false;
+          }
+          if (dEnd < bestDist) {
+            bestDist = dEnd;
+            bestIdx = i;
+            shouldReverse = true;
+          }
+        }
+
+        const nextCandidate = contours.splice(bestIdx, 1)[0];
+        let pts = nextCandidate.points;
+        if (shouldReverse) {
+          pts = pts.slice().reverse();
+        }
+
+        current = {
+          ...nextCandidate,
+          points: pts,
+        };
+
+        finalStrokes.push({
+          points: pts,
+          length: nextCandidate.length,
+          clusterIndex: clusterIdx,
+        });
+      }
+    }
+
+    // Dense color painting strokes for this entity (e.g. coloring character's jacket)
+    for (const cs of colorStrokes) {
+      finalStrokes.push({
+        points: cs.points,
+        length: cs.length,
+        clusterIndex: clusterIdx,
       });
     }
+
+    clusterIdx++;
   }
 
-  // 6. Build Action Timeline (Draw Segments + Smooth Pen-Up Air Transits)
+  // 7. Finally, draw environmental / scene spanning lines (table edge, floor, background)
+  if (spanningItems.length > 0) {
+    spanningItems.sort((a, b) => a.minX - b.minX);
+    for (const item of spanningItems) {
+      const pStart = item.points[0];
+      const pEnd = item.points[item.points.length - 1];
+      if (pStart.x > pEnd.x) {
+        item.points = item.points.slice().reverse();
+      }
+      finalStrokes.push({
+        points: item.points,
+        length: item.length,
+        clusterIndex: clusterIdx,
+      });
+    }
+    clusterIdx++;
+  }
+
+  // 8. Build Action Timeline with DEFAULT uniform speed
   const actions: DoodleAction[] = [];
   const strokeStartDistances: number[] = [];
   const actionStartDistances: number[] = [];
@@ -627,14 +984,13 @@ function clusterAndSequenceStrokes(rawStrokes: DoodlePoint[][]): {
       const prevEnd = prevStroke.points[prevStroke.points.length - 1];
       const jumpDist = Math.hypot(currStart.x - prevEnd.x, currStart.y - prevEnd.y);
 
-      // Add smooth pen-up in-air transit between disconnected strokes/letters/props
+      // Smooth in-air transit between disconnected strokes/entities
       if (jumpDist > 0.003) {
-        // Virtual length for transit motion (proportional to jump distance, capped)
-        const transitLen = Math.max(0.008, Math.min(0.065, jumpDist * 0.35));
+        const transitLen = Math.max(0.006, Math.min(0.05, jumpDist * 0.35));
         actionStartDistances.push(cumulativeDist);
         actions.push({
           type: "transit",
-          strokeIndex: s - 1, // Last completed stroke index
+          strokeIndex: s - 1,
           length: transitLen,
           startDistance: cumulativeDist,
           fromPoint: prevEnd,
@@ -644,6 +1000,7 @@ function clusterAndSequenceStrokes(rawStrokes: DoodlePoint[][]): {
       }
     }
 
+    // Default uniform stroke length (no speed analogies or artificial modulation)
     strokeStartDistances.push(cumulativeDist);
     actionStartDistances.push(cumulativeDist);
     actions.push({
@@ -713,17 +1070,16 @@ function getLuminance(data: Uint8ClampedArray, idx: number): number {
 }
 
 /**
- * Samples perimeter and corner pixels to accurately detect dominant background color of the image
+ * Samples perimeter and corner pixels to accurately detect dominant background color of the image.
+ * Uses dominant color histogram bucketing (16-step quantization) to ignore dark line art,
+ * border strokes, or text that touch the perimeter.
  */
 function detectImageBackgroundColor(
   data: Uint8ClampedArray,
   w: number,
   h: number
 ): DetectedBgColor {
-  let totalR = 0;
-  let totalG = 0;
-  let totalB = 0;
-  let sampleCount = 0;
+  const samples: Array<[number, number, number]> = [];
   let transparentCount = 0;
 
   const samplePixel = (x: number, y: number) => {
@@ -734,15 +1090,12 @@ function detectImageBackgroundColor(
       transparentCount++;
       return;
     }
-    totalR += data[idx];
-    totalG += data[idx + 1];
-    totalB += data[idx + 2];
-    sampleCount++;
+    samples.push([data[idx], data[idx + 1], data[idx + 2]]);
   };
 
-  // Sample 4 corner patches (3x3 each)
-  for (let dy = 0; dy < 3; dy++) {
-    for (let dx = 0; dx < 3; dx++) {
+  // Sample 4 corner patches (4x4 each for robust corner coverage)
+  for (let dy = 0; dy < 4; dy++) {
+    for (let dx = 0; dx < 4; dx++) {
       samplePixel(dx, dy);
       samplePixel(w - 1 - dx, dy);
       samplePixel(dx, h - 1 - dy);
@@ -750,35 +1103,81 @@ function detectImageBackgroundColor(
     }
   }
 
-  // Sample perimeter border edges
-  for (let x = 3; x < w - 3; x += 3) {
+  // Sample perimeter border edges (step 2px for dense perimeter sampling)
+  for (let x = 4; x < w - 4; x += 2) {
     samplePixel(x, 1);
+    samplePixel(x, 2);
+    samplePixel(x, h - 3);
     samplePixel(x, h - 2);
   }
-  for (let y = 3; y < h - 3; y += 3) {
+  for (let y = 4; y < h - 4; y += 2) {
     samplePixel(1, y);
+    samplePixel(2, y);
+    samplePixel(w - 3, y);
     samplePixel(w - 2, y);
   }
 
-  const totalTested = sampleCount + transparentCount;
-  if (transparentCount > totalTested * 0.6 || sampleCount === 0) {
+  const totalTested = samples.length + transparentCount;
+  if (transparentCount > totalTested * 0.6 || samples.length === 0) {
     return {
-      r: 234,
-      g: 234,
-      b: 234,
-      hex: "#EAEAEA",
+      r: 255,
+      g: 255,
+      b: 255,
+      hex: "#FFFFFF",
       isDark: false,
       isTransparent: true,
     };
   }
 
-  const avgR = Math.round(totalR / sampleCount);
-  const avgG = Math.round(totalG / sampleCount);
-  const avgB = Math.round(totalB / sampleCount);
+  // Find dominant color bucket using 16-step quantization
+  // This isolates the true paper background and rejects dark line art or colored edge objects
+  const buckets = new Map<
+    number,
+    { count: number; sumR: number; sumG: number; sumB: number }
+  >();
+
+  for (const [r, g, b] of samples) {
+    const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+    let bkt = buckets.get(key);
+    if (!bkt) {
+      bkt = { count: 0, sumR: 0, sumG: 0, sumB: 0 };
+      buckets.set(key, bkt);
+    }
+    bkt.count++;
+    bkt.sumR += r;
+    bkt.sumG += g;
+    bkt.sumB += b;
+  }
+
+  // Pick the dominant majority bucket
+  let dominantBucket = { count: 0, sumR: 0, sumG: 0, sumB: 0 };
+  for (const bkt of buckets.values()) {
+    if (bkt.count > dominantBucket.count) {
+      dominantBucket = bkt;
+    }
+  }
+
+  let avgR = Math.round(dominantBucket.sumR / dominantBucket.count);
+  let avgG = Math.round(dominantBucket.sumG / dominantBucket.count);
+  let avgB = Math.round(dominantBucket.sumB / dominantBucket.count);
+
+  // Whiteboard / light paper images often have faint compression noise (e.g. 245-254 RGB).
+  // Snap near-white to pure #FFFFFF so the canvas and image match 100.000% seamlessly.
+  if (avgR >= 240 && avgG >= 240 && avgB >= 240) {
+    avgR = 255;
+    avgG = 255;
+    avgB = 255;
+  } else if (avgR <= 16 && avgG <= 16 && avgB <= 16) {
+    // Chalkboard deep black snapping
+    avgR = 0;
+    avgG = 0;
+    avgB = 0;
+  }
 
   const hex = `#${((1 << 24) + (avgR << 16) + (avgG << 8) + avgB)
     .toString(16)
-    .slice(1)}`;
+    .slice(1)
+    .toUpperCase()}`;
   const lum = (0.299 * avgR + 0.587 * avgG + 0.114 * avgB) / 255;
 
   return {
